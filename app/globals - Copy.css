@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import 'tw-animate-css';
+
+:root {
+  /* Premium Terracotta/Rose-Gold Luxury Jewelry Palette */
+  --background: oklch(0.985 0.004 55);
+  --foreground: oklch(0.20 0.02 55);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.20 0.02 55);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.20 0.02 55);
+  
+  /* Primary: Terracotta Gold (#b97a57) */
+  --primary: oklch(0.59 0.14 55);
+  --primary-foreground: oklch(1 0 0);
+  
+  /* Secondary: Soft Gold/Beige hover (#b0775d) */
+  --secondary: oklch(0.57 0.12 55);
+  --secondary-foreground: oklch(1 0 0);
+  
+  /* Muted: Soft beige/taupe */
+  --muted: oklch(0.93 0.02 55);
+  --muted-foreground: oklch(0.45 0.02 55);
+  
+  /* Accent: Rose Gold (#c88a6d) */
+  --accent: oklch(0.65 0.13 55);
+  --accent-foreground: oklch(1 0 0);
+  
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --border: oklch(0.92 0.008 55);
+  --input: oklch(0.92 0.008 55);
+  --ring: oklch(0.65 0.13 55);
+  
+  /* Chart colors - Terracotta and rose gold tones */
+  --chart-1: oklch(0.59 0.14 55);
+  --chart-2: oklch(0.65 0.13 55);
+  --chart-3: oklch(0.57 0.12 55);
+  --chart-4: oklch(0.72 0.10 55);
+  --chart-5: oklch(0.80 0.08 55);
+  
+  --radius: 0.625rem;
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.20 0.02 55);
+  --sidebar-primary: oklch(0.59 0.14 55);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.65 0.13 55);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(0.92 0.008 55);
+  --sidebar-ring: oklch(0.65 0.13 55);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  /* Gradient accents for sections matching the terracotta/rose-gold theme */
+  .gradient-gold {
+    @apply bg-gradient-to-br from-[#faf6f3] via-background to-[#f0e4dc];
+  }
+  
+  .gradient-wine {
+    @apply bg-gradient-to-br from-[#f8ece6] via-background to-[#ebd4c8];
+  }
+  
+  .gradient-accent {
+    @apply bg-gradient-to-r from-[#b97a57] to-[#c88a6d];
+  }
+
+}
+
+/* Bespoke Module Specific Colors (Mapped to Global Theme) */
+:root {
+  --bespoke-gold: #b97a57; /* Mapped to theme primary */
+  --bespoke-gold-light: #c88a6d; /* Mapped to theme accent */
+  --bespoke-gold-dark: #9a5f40; /* Darker theme primary */
+  --bespoke-black: #1a1a1a; /* Theme deep text */
+  --bespoke-white: #ffffff; /* Pure white */
+  --bespoke-beige: #f8ece6; /* Theme soft background */
+}

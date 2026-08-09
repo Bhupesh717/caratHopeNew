@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import 'tw-animate-css';
+
+:root {
+  --background: #FAF6EE;
+  --foreground: #0A0A0A;
+  --card: #ffffff;
+  --card-foreground: #0A0A0A;
+  --popover: #ffffff;
+  --popover-foreground: #0A0A0A;
+  
+  --primary: #D4A24C;
+  --primary-foreground: #ffffff;
+  
+  --secondary: #1D6F4F;
+  --secondary-foreground: #ffffff;
+  
+  --muted: #ffffff;
+  --muted-foreground: #6b7280;
+  
+  --accent: #F2C879;
+  --accent-foreground: #0B3D2E;
+  
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #D4A24C;
+  
+  --radius: 0.625rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0A0A0A;
+  --sidebar-primary: #D4A24C;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #F2C879;
+  --sidebar-accent-foreground: #0A0A0A;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #D4A24C;
+
+  /* Emerald & Gold Theme Extensions */
+  --emerald-dark: #0B3D2E;
+  --emerald-accent: #1D6F4F;
+  --gold-primary: #D4A24C;
+  --gold-light: #F2C879;
+
+  /* Custom gold variants */
+  --bespoke-gold: #D4A24C;
+  --bespoke-gold-light: #F2C879;
+  --bespoke-gold-dark: #b5883a;
+  --bespoke-black: #0A0A0A;
+  --bespoke-white: #FAF6EE;
+  --bespoke-beige: #ffffff;
+}
+
+.dark {
+  --background: #0A0A0A;
+  --foreground: #FAFAFA;
+  --card: #121212;
+  --card-foreground: #FAFAFA;
+  --popover: #121212;
+  --popover-foreground: #FAFAFA;
+  --primary: #D4AF37;
+  --primary-foreground: #0A0A0A;
+  --secondary: #AA8C2C;
+  --secondary-foreground: #FAFAFA;
+  --muted: #1e1e1e;
+  --muted-foreground: #9ca3af;
+  --accent: #AA8C2C;
+  --accent-foreground: #FAFAFA;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #D4AF37;
+  --sidebar: #121212;
+  --sidebar-foreground: #FAFAFA;
+  --sidebar-primary: #D4AF37;
+  --sidebar-primary-foreground: #0A0A0A;
+  --sidebar-accent: #AA8C2C;
+  --sidebar-accent-foreground: #FAFAFA;
+  --sidebar-border: #27272a;
+  --sidebar-ring: #D4AF37;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  /* Gradient accents for sections matching the gold theme */
+  .gradient-gold {
+    @apply bg-gradient-to-br from-muted via-background to-secondary;
+  }
+  
+  .gradient-wine {
+    @apply bg-gradient-to-br from-muted via-background to-accent;
+  }
+  
+  .gradient-accent {
+    @apply bg-gradient-to-r from-primary to-accent;
+  }
+}

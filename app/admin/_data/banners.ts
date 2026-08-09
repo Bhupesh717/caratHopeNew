@@ -1,0 +1,58 @@
+import { Banner } from '../_types';
+
+export const mockBanners: Banner[] = [
+  {
+    id: 'ban-001',
+    image: 'https://images.unsplash.com/photo-1515562141207-6811bcdd56f8?w=1400&h=500&fit=crop',
+    badge: 'SUMMER SPECIAL',
+    title: 'Summer Diamond Collection',
+    description: 'Up to 30% off on select diamond jewelry, crafted to shine under the sun.',
+    status: 'active',
+    createdAt: '2026-03-15T10:30:00Z',
+  },
+  {
+    id: 'ban-002',
+    image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=1400&h=500&fit=crop',
+    badge: 'WEDDING SPECIAL',
+    title: 'Wedding Season Specials',
+    description: 'Find the perfect engagement ring and matching bridal sets for your special day.',
+    status: 'active',
+    createdAt: '2026-03-20T14:15:00Z',
+  },
+  {
+    id: 'ban-003',
+    image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=1400&h=500&fit=crop',
+    badge: 'NEW ARRIVALS',
+    title: 'New Arrivals — Pearl Edition',
+    description: 'Freshwater pearls crafted with elegance, absolute sophistication in every detail.',
+    status: 'active',
+    createdAt: '2026-04-02T09:00:00Z',
+  },
+  {
+    id: 'ban-004',
+    image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=1400&h=500&fit=crop',
+    badge: 'BRACELETS FESTIVAL',
+    title: 'Gold Bracelet Festival',
+    description: 'Celebrate your elegance with our collection of timeless gold bracelets and bangles.',
+    status: 'inactive',
+    createdAt: '2026-04-10T11:45:00Z',
+  },
+  {
+    id: 'ban-005',
+    image: 'https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?w=1400&h=500&fit=crop',
+    badge: 'GIFT GUIDE',
+    title: 'Luxury Gift Guide',
+    description: 'Curated selections for every occasion. Surprise your loved ones with fine jewelry.',
+    status: 'active',
+    createdAt: '2026-04-18T16:30:00Z',
+  },
+  {
+    id: 'ban-006',
+    image: 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?w=1400&h=500&fit=crop',
+    badge: 'SAPPHIRE COLLECTION',
+    title: 'Sapphire Dreams',
+    description: 'Explore our statement sapphire & gemstone collection designed for absolute luxury.',
+    status: 'active',
+    createdAt: '2026-05-01T08:20:00Z',
+  },
+];
