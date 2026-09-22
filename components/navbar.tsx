@@ -7,7 +7,13 @@ import { useWishlistStore } from '@/store/wishlist';
 import { useAuthStore } from '@/store/auth';
 import { Heart, ShoppingCart, Menu, X, Search, User, Store, LogOut, ClipboardList, Gem, UserCircle } from 'lucide-react';
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { apiClient } from '@/lib/api-client';
 import { motion, AnimatePresence } from 'framer-motion';
+
+interface NavCategory {
+  id: string;
+  name: string;
+}
 
 const navLinks = [
   { label: 'Shop', href: '/shop', icon: Store },
@@ -25,10 +31,28 @@ export function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [showTopBar, setShowTopBar] = useState(true);
   const [scrolled, setScrolled] = useState(false);
+  const [categories, setCategories] = useState<NavCategory[]>([]);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useLayoutEffect(() => {
     setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const response = await apiClient.get('/public/categories');
+        if (response.data && response.data.success && Array.isArray(response.data.data)) {
+          setCategories(response.data.data.map((c: any) => ({
+            id: String(c.id),
+            name: c.name,
+          })));
+        }
+      } catch (err) {
+        console.error('Error fetching navbar categories:', err);
+      }
+    }
+    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -44,9 +68,9 @@ export function Navbar() {
 
   return (
     <>
-      <nav className={`fixed w-full top-0 z-50 flex flex-col transition-all duration-500 ${scrolled
-        ? 'bg-white/98 backdrop-blur-xl shadow-[0_2px_32px_rgba(0,0,0,0.07)]'
-        : 'bg-transparent'
+      <nav className={`sticky w-full top-0 z-50 flex flex-col transition-all duration-500 ${scrolled
+        ? 'bg-white/98 backdrop-blur-xl shadow-[0_2px_32px_rgba(0,0,0,0.07)] border-b border-slate-100'
+        : 'bg-[#FAF6EE] border-b border-emerald-dark/10 shadow-[0_2px_15px_rgba(0,0,0,0.03)]'
         }`}>
 
         {/* Top Promotional Bar — home page only */}
@@ -82,35 +106,31 @@ export function Navbar() {
           </>
         )}
 
-        {/* Mobile Center Logo Text (Above Main Navbar Row) */}
-        <div className={`flex sm:hidden w-full justify-center transition-all duration-500 ${scrolled ? 'pt-2 pb-0' : 'pt-2 pb-0'}`}>
-          <Link href="/" className="pointer-events-auto">
-            <span className={`uppercase font-serif drop-shadow-lg tracking-[0.08em] select-none transition-all duration-500 leading-none ${scrolled ? 'text-3xl' : 'text-3xl'}`}>
-              <span className="text-[#062119] font-semibold"><span className={`${scrolled ? 'text-4xl' : 'text-4xl'}`}>C</span>aratHope</span>
-            </span>
-          </Link>
-        </div>
-
         {/* Main Navbar Row */}
-        <div className="relative w-full px-5 sm:px-8 flex items-center justify-between gap-6 py-2 sm:py-4">
+        <div className={`relative w-full px-4 sm:px-8 lg:px-12 flex items-center justify-between transition-all duration-500 ${
+          scrolled ? 'h-16 sm:h-20' : 'h-20 sm:h-28'
+        }`}>
 
-          {/* ── LEFT: Logo image ── */}
-          <Link href="/" aria-label="CaratHope Home" className="flex-shrink-0">
-            <img
-              src="/logo11.png"
-              alt="CaratHope"
-              className={`w-auto object-contain transition-all duration-500 ${scrolled ? 'h-10 sm:h-11' : 'h-8 sm:h-16'}`}
-            />
-          </Link>
-
-          <Link href="/" className="hidden sm:block absolute left-1/2 -translate-x-1/2 pointer-events-none sm:pointer-events-auto">
-            <span className={`uppercase font-serif drop-shadow-lg tracking-[0.08em] select-none transition-all duration-500 leading-none ${scrolled ? 'text-5xl' : 'text-7xl'}`}>
-              <span className="text-[#062119] font-semibold"><span className={`${scrolled ? 'text-6xl' : 'text-8xl'}`}>C</span>aratHope</span>
+          {/* ── Logo Text: Left on mobile, Centered on tablet & desktop ── */}
+          <Link
+            href="/"
+            aria-label="CaratHope Home"
+            className="flex-shrink-0 flex items-center group py-1 sm:absolute sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:pointer-events-auto z-10 text-left sm:text-center"
+          >
+            <span
+              className={`uppercase font-serif drop-shadow-lg tracking-[0.06em] sm:tracking-[0.08em] select-none transition-all duration-500 leading-none ${
+                scrolled ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-4xl sm:text-6xl lg:text-7xl'
+              }`}
+            >
+              <span className="text-[#062119] font-semibold">
+                <span className={`${scrolled ? 'text-4xl sm:text-5xl lg:text-6xl' : 'text-5xl sm:text-7xl lg:text-8xl'}`}>C</span>
+                aratHope
+              </span>
             </span>
           </Link>
 
           {/* ── RIGHT: Nav Links + Icons ── */}
-          <div className="flex items-center gap-5 sm:gap-6">
+          <div className="flex items-center gap-3 sm:gap-6 ml-auto z-20">
 
             {/* Desktop Nav Links — icon only for Shop */}
             <div className="hidden lg:flex items-center gap-7 mr-2">
@@ -139,10 +159,10 @@ export function Navbar() {
               <Search className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
             </button>
 
-            {/* Wishlist */}
+            {/* Wishlist — Desktop only (Mobile in Drawer) */}
             <Link
               href="/wishlist"
-              className="relative text-emerald-dark hover:text-gold-primary transition-colors duration-300"
+              className="hidden sm:block relative text-emerald-dark hover:text-gold-primary transition-colors duration-300"
               title="Wishlist"
             >
               <Heart className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
@@ -167,87 +187,89 @@ export function Navbar() {
               )}
             </Link>
 
-            {/* Auth */}
-            {isHydrated ? (
-              isAuthenticated ? (
-                /* ── Profile Hover Dropdown ── */
-                <div className="relative group">
-                  {/* Trigger icon */}
-                  <button
-                    aria-label="My Account"
-                    className="relative text-emerald-dark group-hover:text-gold-primary transition-colors duration-300 flex items-center"
-                  >
-                    <User className="h-5 w-5 sm:h-[20px] sm:w-[20px]" />
-                  </button>
+            {/* Auth — Desktop only (Mobile in Drawer) */}
+            <div className="hidden sm:flex items-center">
+              {isHydrated ? (
+                isAuthenticated ? (
+                  /* ── Profile Hover Dropdown ── */
+                  <div className="relative group">
+                    {/* Trigger icon */}
+                    <button
+                      aria-label="My Account"
+                      className="relative text-emerald-dark group-hover:text-gold-primary transition-colors duration-300 flex items-center"
+                    >
+                      <User className="h-5 w-5 sm:h-[20px] sm:w-[20px]" />
+                    </button>
 
-                  {/* Dropdown — visible on group hover */}
-                  <div className="absolute right-0 top-full mt-0 w-52 bg-white border border-slate-100 shadow-[0_8px_32px_rgba(0,0,0,0.10)] z-50
-                    opacity-0 invisible translate-y-1
-                    group-hover:opacity-100 group-hover:visible group-hover:translate-y-0
-                    transition-all duration-200 ease-out pointer-events-none group-hover:pointer-events-auto">
+                    {/* Dropdown — visible on group hover */}
+                    <div className="absolute right-0 top-full mt-0 w-52 bg-white border border-slate-100 shadow-[0_8px_32px_rgba(0,0,0,0.10)] z-50
+                      opacity-0 invisible translate-y-1
+                      group-hover:opacity-100 group-hover:visible group-hover:translate-y-0
+                      transition-all duration-200 ease-out pointer-events-none group-hover:pointer-events-auto">
 
-                    {/* User name header */}
-                    <div className="px-4 py-3 border-b border-slate-100">
-                      <p className="text-[10px] tracking-[0.15em] uppercase text-slate-400">Signed in as</p>
-                      <p className="text-sm font-semibold text-emerald-dark truncate mt-0.5">{user?.name || 'My Account'}</p>
-                    </div>
+                      {/* User name header */}
+                      <div className="px-4 py-3 border-b border-slate-100">
+                        <p className="text-[10px] tracking-[0.15em] uppercase text-slate-400">Signed in as</p>
+                        <p className="text-sm font-semibold text-emerald-dark truncate mt-0.5">{user?.name || 'My Account'}</p>
+                      </div>
 
-                    {/* Menu items */}
-                    <ul className="py-2">
-                      <li>
-                        <Link href="/profile"
-                          className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wide text-slate-600 hover:bg-[#FAF6EE] hover:text-emerald-dark transition-colors">
-                          <UserCircle className="w-4 h-4 text-slate-400" />
-                          Profile Info
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/orders"
-                          className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wide text-slate-600 hover:bg-[#FAF6EE] hover:text-emerald-dark transition-colors">
-                          <ClipboardList className="w-4 h-4 text-slate-400" />
-                          Order History
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/bespoke-jewellery"
-                          className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wide text-slate-600 hover:bg-[#FAF6EE] hover:text-emerald-dark transition-colors">
-                          <Gem className="w-4 h-4 text-slate-400" />
-                          Bespoke Orders
-                        </Link>
-                      </li>
-                    </ul>
+                      {/* Menu items */}
+                      <ul className="py-2">
+                        <li>
+                          <Link href="/profile"
+                            className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wide text-slate-600 hover:bg-[#FAF6EE] hover:text-emerald-dark transition-colors">
+                            <UserCircle className="w-4 h-4 text-slate-400" />
+                            Profile Info
+                          </Link>
+                        </li>
+                        <li>
+                          <Link href="/orders"
+                            className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wide text-slate-600 hover:bg-[#FAF6EE] hover:text-emerald-dark transition-colors">
+                            <ClipboardList className="w-4 h-4 text-slate-400" />
+                            Order History
+                          </Link>
+                        </li>
+                        <li>
+                          <Link href="/personalised-jewellery"
+                            className="flex items-center gap-3 px-4 py-2.5 text-xs tracking-wide text-slate-600 hover:bg-[#FAF6EE] hover:text-emerald-dark transition-colors">
+                            <Gem className="w-4 h-4 text-slate-400" />
+                            Personalised Orders
+                          </Link>
+                        </li>
+                      </ul>
 
-                    {/* Sign Out */}
-                    <div className="border-t border-slate-100 py-2">
-                      <button
-                        onClick={() => logout()}
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-xs tracking-wide text-red-500 hover:bg-red-50 transition-colors">
-                        <LogOut className="w-4 h-4" />
-                        Sign Out
-                      </button>
+                      {/* Sign Out */}
+                      <div className="border-t border-slate-100 py-2">
+                        <button
+                          onClick={() => logout()}
+                          className="flex w-full items-center gap-3 px-4 py-2.5 text-xs tracking-wide text-red-500 hover:bg-red-50 transition-colors">
+                          <LogOut className="w-4 h-4" />
+                          Sign Out
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <Link
+                    href="/login"
+                    title="Sign In"
+                    className="relative text-emerald-dark hover:text-gold-primary transition-colors duration-300"
+                  >
+                    {/* User + arrow-in SVG */}
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                      className="h-5 w-5 sm:h-[20px] sm:w-[20px]">
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M2 21v-1a7 7 0 0 1 10.46-6.08" />
+                      <path d="M17 16l3 3-3 3" />
+                      <path d="M14 19h6" />
+                    </svg>
+                  </Link>
+                )
               ) : (
-                <Link
-                  href="/login"
-                  title="Sign In"
-                  className="relative text-emerald-dark hover:text-gold-primary transition-colors duration-300"
-                >
-                  {/* User + arrow-in SVG */}
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                    className="h-5 w-5 sm:h-[20px] sm:w-[20px]">
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M2 21v-1a7 7 0 0 1 10.46-6.08" />
-                    <path d="M17 16l3 3-3 3" />
-                    <path d="M14 19h6" />
-                  </svg>
-                </Link>
-              )
-            ) : (
-              <div className="w-[20px] h-[20px] rounded-full animate-pulse bg-slate-100" />
-            )}
+                <div className="w-[20px] h-[20px] rounded-full animate-pulse bg-slate-100" />
+              )}
+            </div>
 
             {/* Mobile hamburger */}
             <button
@@ -259,6 +281,29 @@ export function Navbar() {
             </button>
           </div>
         </div>
+
+        {/* Categories Bar (Bottom Row) */}
+        {categories.length > 0 && (
+          <div className="w-full border-t border-emerald-dark/10">
+            <div className="mx-auto max-w-7xl px-4 sm:px-8">
+              <div
+                className="flex items-center justify-start sm:justify-center gap-5 sm:gap-8 md:gap-10 overflow-x-auto scrollbar-hide py-2 sm:py-2.5 text-[11px] sm:text-xs tracking-[0.16em] uppercase font-serif"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    href={`/shop?category=${cat.id}`}
+                    className="whitespace-nowrap text-emerald-dark/90 hover:text-gold-primary transition-colors duration-300 relative group py-0.5"
+                  >
+                    <span>{cat.name}</span>
+                    <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-gold-primary transition-all duration-300 group-hover:w-full" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Search Dropdown */}
         <AnimatePresence>
@@ -327,6 +372,48 @@ export function Navbar() {
                     </Link>
                   </motion.div>
                 ))}
+
+                {/* Wishlist in Mobile Drawer */}
+                <motion.div
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.05 }}
+                >
+                  <Link
+                    href="/wishlist"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center justify-between py-4 text-sm font-semibold tracking-[0.15em] uppercase text-emerald-dark hover:text-gold-primary transition-colors border-b border-slate-50"
+                  >
+                    <span className="flex items-center gap-3">
+                      <Heart className="w-4 h-4 stroke-[1.5] text-slate-400" />
+                      Wishlist
+                    </span>
+                    {isHydrated && wishlistCount > 0 && (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gold-primary text-[10px] font-bold text-white">
+                        {wishlistCount}
+                      </span>
+                    )}
+                  </Link>
+                </motion.div>
+
+                {/* Categories in Mobile Drawer */}
+                {categories.length > 0 && (
+                  <div className="py-4 border-b border-slate-50">
+                    <p className="text-[10px] tracking-[0.2em] uppercase text-slate-400 mb-3 px-1 font-semibold">Categories</p>
+                    <div className="flex flex-wrap gap-2">
+                      {categories.map((cat) => (
+                        <Link
+                          key={cat.id}
+                          href={`/shop?category=${cat.id}`}
+                          onClick={() => setIsOpen(false)}
+                          className="text-xs px-3 py-1.5 rounded-full bg-slate-100 hover:bg-gold-primary/15 hover:text-gold-primary text-emerald-dark transition-colors uppercase tracking-wider"
+                        >
+                          {cat.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <motion.div
                   initial={{ opacity: 0, x: -12 }}

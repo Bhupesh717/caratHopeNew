@@ -23,6 +23,10 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState<string>('');
+  
+  // Variations State
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
 
   // Image Zoom state
   const [isHovering, setIsHovering] = useState(false);
@@ -85,9 +89,23 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             rating: 0, // Will be updated by reviews
             reviews: 0,
             images: allImages,
+            has_variants: Boolean(p.has_variants),
+            variants: p.variants || [],
+            variation_axes: p.variation_axes || [],
           };
           setProduct(mappedProd);
           setActiveImage(allImages[0]);
+
+          // Initialize variations if any
+          if (mappedProd.has_variants && mappedProd.variation_axes && mappedProd.variation_axes.length > 0) {
+            const initialOptions: Record<string, string> = {};
+            mappedProd.variation_axes.forEach((axis: any) => {
+              if (axis.values && axis.values.length > 0) {
+                initialOptions[axis.id] = String(axis.values[0].id);
+              }
+            });
+            setSelectedOptions(initialOptions);
+          }
 
           fetchReviews(p.id);
 
@@ -142,6 +160,28 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 
     fetchProductDetail();
   }, [params.id]);
+
+  // Update selected variant when options change
+  useEffect(() => {
+    if (product && product.has_variants && product.variants) {
+      const variant = product.variants.find((v: any) => {
+        // match attributes array (which might be an array of IDs)
+        // against selectedOptions values.
+        if (!v.attributes || v.attributes.length === 0) return false;
+        const selectedValues = Object.values(selectedOptions).map(String);
+        return selectedValues.every(val => v.attributes.map(String).includes(val));
+      });
+      setSelectedVariant(variant || null);
+    }
+  }, [selectedOptions, product]);
+
+  const currentPrice = selectedVariant 
+    ? (selectedVariant.price || product?.price || 0)
+    : (product?.price || 0);
+
+  const currentOriginalPrice = selectedVariant?.compare_at_price 
+    ? selectedVariant.compare_at_price 
+    : (selectedVariant ? undefined : product?.originalPrice);
 
   const fetchReviews = async (productId: number) => {
     try {
@@ -309,46 +349,52 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 
             <div className="border-t border-b border-neutral-200 py-6">
               <div className="flex flex-col">
-                {product.originalPrice && product.originalPrice > product.price && (
+                {currentOriginalPrice && currentOriginalPrice > currentPrice && (
                   <span className="text-xl line-through text-neutral-400">
                     {getCurrencySymbol(product.currency)}
-                    {product.originalPrice.toLocaleString()}
+                    {currentOriginalPrice.toLocaleString()}
                   </span>
                 )}
                 <p className="text-4xl font-light text-neutral-900">
                   {getCurrencySymbol(product.currency)}
-                  {product.price.toLocaleString()}
+                  {currentPrice.toLocaleString()}
                 </p>
+                {selectedVariant && selectedVariant.stock_quantity !== undefined && (
+                  <p className={`text-sm mt-2 font-medium ${selectedVariant.stock_quantity > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                    {selectedVariant.stock_quantity > 0 ? 'In Stock' : 'Out of Stock'}
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Color & Size Selection (Static placeholders) */}
-            <div className="space-y-6 pt-2 pb-6 border-b border-neutral-200">
-              {/* Color */}
-              <div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-neutral-900 block mb-3">Color</span>
-                <div className="flex gap-3">
-                  <button className="w-8 h-8 rounded-full bg-[#D4AF37] ring-2 ring-offset-2 ring-emerald-dark" title="Yellow Gold" />
-                  <button className="w-8 h-8 rounded-full bg-[#B76E79] ring-1 ring-neutral-200 hover:ring-emerald-dark hover:ring-offset-1 transition-all" title="Rose Gold" />
-                  <button className="w-8 h-8 rounded-full bg-[#E5E4E2] ring-1 ring-neutral-200 hover:ring-emerald-dark hover:ring-offset-1 transition-all" title="White Gold" />
-                </div>
+            {/* Dynamic Variation Selection */}
+            {product.has_variants && product.variation_axes && product.variation_axes.length > 0 && (
+              <div className="space-y-6 pt-2 pb-6 border-b border-neutral-200">
+                {product.variation_axes.map((axis: any) => (
+                  <div key={axis.id}>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-neutral-900 block mb-3">{axis.name}</span>
+                    <div className="flex flex-wrap gap-2">
+                      {axis.values?.map((val: any) => {
+                        const isSelected = selectedOptions[axis.id] === String(val.id);
+                        return (
+                          <button
+                            key={val.id}
+                            onClick={() => setSelectedOptions({ ...selectedOptions, [axis.id]: String(val.id) })}
+                            className={`px-4 py-2 text-sm border flex items-center justify-center transition-colors ${
+                              isSelected
+                                ? 'border-emerald-dark bg-emerald-dark text-white'
+                                : 'border-neutral-200 text-neutral-600 hover:border-emerald-dark hover:text-emerald-dark'
+                            }`}
+                          >
+                            {val.value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              {/* Size */}
-              <div>
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-neutral-900 block">Size</span>
-                  <a href="#" className="text-[10px] uppercase tracking-wider text-gold-primary hover:underline">Size Guide</a>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {['10', '12', '14', '16', '18'].map((s) => (
-                    <button key={s} className={`h-10 w-10 text-sm border flex items-center justify-center transition-colors ${s === '12' ? 'border-emerald-dark bg-emerald-dark text-white' : 'border-neutral-200 text-neutral-600 hover:border-emerald-dark hover:text-emerald-dark'}`}>
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Quantity and Store Availability */}
             <div className="space-y-5 py-6">
@@ -387,16 +433,16 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                   <p className="text-xs text-neutral-600 leading-relaxed">Visit our Jaipur Studio to view or purchase this piece directly.</p>
                 </div>
               </div>
-              {/* Actions (Add to Cart / Wishlist) */}
               <div className="flex gap-4 pt-2">
                 <Button
                   onClick={() => {
-                    addToCart(product, quantity);
+                    addToCart(product, quantity, selectedVariant?.id, selectedOptions);
                     setQuantity(1);
                   }}
-                  className="flex-1 bg-emerald-dark text-white hover:bg-[#0B3D2E]/90 hover:text-gold-primary h-12 uppercase tracking-wider font-semibold text-xs transition-colors duration-300"
+                  disabled={product.has_variants && (!selectedVariant || selectedVariant.stock_quantity === 0)}
+                  className="flex-1 bg-emerald-dark text-white hover:bg-[#0B3D2E]/90 hover:text-gold-primary h-12 uppercase tracking-wider font-semibold text-xs transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Add to Cart
+                  {product.has_variants && selectedVariant?.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
                 </Button>
                 <Button
                   onClick={() => toggleWishlist(product)}

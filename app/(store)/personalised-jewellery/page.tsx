@@ -70,7 +70,7 @@ export default function BespokeLandingPage() {
             transition={{ duration: 1, delay: 1.2 }}
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
-            <Link href="/bespoke-jewellery/request">
+            <Link href="/personalised-jewellery/request">
               <Button size="lg" className="w-full sm:w-auto bg-bespoke-gold text-white hover:bg-bespoke-gold-dark rounded-full px-8 text-base h-14">
                 Request Your Order Now
               </Button>

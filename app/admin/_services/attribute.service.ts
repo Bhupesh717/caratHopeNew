@@ -3,8 +3,8 @@ import { AdminAttribute, AdminAttributeValue } from '../_types';
 
 export const attributeService = {
   // Attributes
-  getAll: async (): Promise<AdminAttribute[]> => {
-    const response = await adminApiClient.get('/admin/attributes');
+  getAll: async (params?: Record<string, any>): Promise<AdminAttribute[]> => {
+    const response = await adminApiClient.get('/admin/attributes', { params });
     return response.data?.data || [];
   },
 
@@ -13,12 +13,12 @@ export const attributeService = {
     return response.data?.data;
   },
 
-  create: async (data: { name: string; slug: string; input_type: string; unit?: string | null; affects_price?: boolean }): Promise<AdminAttribute> => {
+  create: async (data: { name: string; slug: string; input_type: string; unit?: string | null; allowed_units?: string[]; affects_price?: boolean; can_be_variation?: boolean; is_global?: boolean; is_custom?: boolean; max_selections?: number }): Promise<AdminAttribute> => {
     const response = await adminApiClient.post('/admin/attributes', data);
     return response.data?.data;
   },
 
-  update: async (id: string, data: { name: string; slug: string; input_type: string; unit?: string | null; affects_price?: boolean }): Promise<AdminAttribute> => {
+  update: async (id: string, data: { name: string; slug: string; input_type: string; unit?: string | null; allowed_units?: string[]; affects_price?: boolean; can_be_variation?: boolean; is_global?: boolean; is_custom?: boolean; max_selections?: number }): Promise<AdminAttribute> => {
     const response = await adminApiClient.put(`/admin/attributes/${id}`, data);
     return response.data?.data;
   },
@@ -28,7 +28,12 @@ export const attributeService = {
   },
 
   // Attribute Values
-  createValue: async (attributeId: string, data: { value: string; price_modifier?: number; sort_order?: number }): Promise<AdminAttributeValue> => {
+  getValues: async (attributeId: string, params?: { search?: string; scale?: string; per_page?: number }): Promise<AdminAttributeValue[]> => {
+    const response = await adminApiClient.get(`/admin/attributes/${attributeId}/values`, { params });
+    return response.data?.data || [];
+  },
+
+  createValue: async (attributeId: string, data: { value: string; scale?: string; price_modifier?: number; sort_order?: number }): Promise<AdminAttributeValue> => {
     const response = await adminApiClient.post(`/admin/attributes/${attributeId}/values`, data);
     return response.data?.data;
   },

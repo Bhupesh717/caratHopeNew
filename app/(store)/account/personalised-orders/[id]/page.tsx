@@ -63,7 +63,7 @@ export default function CustomerOrderDetailsPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <Link href="/account/bespoke-orders" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
+            <Link href="/account/personalised-orders" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
               <ArrowLeft className="w-4 h-4 mr-2" /> Back to Orders
             </Link>
             <h1 className="text-3xl font-serif text-foreground flex items-center gap-4">
@@ -71,12 +71,12 @@ export default function CustomerOrderDetailsPage() {
               <BespokeStatusBadge status={order.status} className="text-sm font-sans" />
             </h1>
             <p className="text-muted-foreground mt-1 capitalize">
-              Bespoke {order.metalType} {order.jewelleryType}
+              Personalised {order.metalType} {order.jewelleryType}
             </p>
           </div>
           
           <a
-            href={`https://wa.me/919876543210?text=${encodeURIComponent(`Hi, I would like to chat about my bespoke order ${order.id}.`)}`}
+            href={`https://wa.me/919876543210?text=${encodeURIComponent(`Hi, I would like to chat about my personalised order ${order.id}.`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="shrink-0"

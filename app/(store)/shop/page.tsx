@@ -124,6 +124,7 @@ export default function ShopPage() {
             description: p.description || '',
             rating: p.avg_rating ? Number(Number(p.avg_rating).toFixed(1)) : 5,
             reviews: p.reviews_count || 0,
+            has_variants: Boolean(p.has_variants),
           }));
 
           if (currentPage === 1) {

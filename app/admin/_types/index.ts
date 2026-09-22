@@ -47,7 +47,7 @@ export interface AdminProduct {
   description: string;
   video?: string | null;
   details?: { key: string; value: string }[];
-  has_variants: boolean;
+  has_variants?: boolean;
   status: 'active' | 'inactive';
   isFeatured: boolean;
   createdAt: string;
@@ -73,6 +73,60 @@ export interface AdminProductVariant {
   attribute_value_ids?: string[]; // IDs of attribute values this variant represents
   prices?: VariantPrice[];
   createdAt: string;
+}
+
+/** The exact payload shape for POST/PUT /admin/products */
+export interface ProductFormState {
+  name: string;
+  category_id: string | number;
+  description?: string;
+  status?: 'active' | 'inactive';
+  is_featured?: boolean;
+  sku?: string;
+  when_was_it_made?: string;
+  images: (string | File)[]; // Base64 data URIs, URLs, or raw Files
+  video?: string | File;
+  
+  has_variants?: boolean;
+  prices_vary?: boolean;
+  quantities_vary?: boolean;
+  skus_vary?: boolean;
+  processing_time_varies?: boolean;
+  max_variation_axes?: number;
+  variation_axis_ids?: string[]; // attribute IDs selected as variation axes in Step 3
+  
+  variants?: ProductVariantFormState[];
+  
+  // Top-level when toggles are OFF
+  prices?: { region_id: number | string; price: number; compare_at_price?: number }[];
+  total_stock?: number;
+  stock_qty?: number; // for no-variant products
+  
+  is_global_pricing_enabled?: boolean;
+  allow_offers?: boolean;
+  max_offer_discount_percent?: number;
+  
+  // Descriptive
+  tags?: string[];
+  materials?: string[];
+  gold_solidity?: string[];
+  gold_purity?: string[];
+  listing_attributes?: Record<string, any>;
+  
+  processing_profile_id?: string | number;
+  shipping_profile_id?: string | number;
+}
+
+export interface ProductVariantFormState {
+  id?: string; // For updates
+  attributes: (string | number)[]; // e.g. [29, 51]
+  prices?: { region_id: number | string; price: number; compare_at_price?: number }[];
+  stock_quantity?: number;
+  sku?: string;
+  processing_days?: number;
+  is_active?: boolean;
+  weight_grams?: number;
+  making_charges?: number;
 }
 
 /** Coupon / discount code */
@@ -166,6 +220,11 @@ export interface AdminAttribute {
   slug: string;
   input_type: string;
   unit?: string | null;
+  allowed_units?: string[];
+  max_selections?: number;
+  can_be_variation?: boolean;
+  is_global?: boolean;
+  is_custom?: boolean;
   affects_price?: boolean;
   createdAt: string;
   values?: AdminAttributeValue[];
@@ -176,6 +235,7 @@ export interface AdminAttributeValue {
   id: string;
   attribute_id: string;
   value: string;
+  scale?: string;
   price_modifier?: number;
   sort_order?: number;
   createdAt: string;
@@ -192,4 +252,62 @@ export interface AdminCategoryAttribute {
   // Extra fields that might come from JOINs or populated data
   category_name?: string;
   attribute_name?: string;
+}
+
+/** Region (Pricing/Shipping) */
+export interface AdminRegion {
+  id: string;
+  name: string;
+  code?: string;
+  currency_code: string;
+  currency_symbol: string;
+  tax_rate?: number;
+  is_active?: boolean;
+  is_default: boolean;
+  createdAt: string;
+}
+
+/** Processing Profile */
+export interface AdminProcessingProfile {
+  id: string;
+  name: string;
+  min_days: number;
+  max_days: number;
+  is_default: boolean;
+  is_active: boolean;
+  createdAt: string;
+}
+
+/** Shipping Profile */
+export interface AdminShippingProfile {
+  id: string;
+  name: string;
+  origin_pincode: string;
+  origin_country_code: string;
+  is_default: boolean;
+  is_active: boolean;
+  products_count: number;
+  createdAt: string;
+}
+
+/** Shipping Method */
+export interface AdminShippingMethod {
+  id: string;
+  shipping_zone_id: string;
+  shipping_profile_id: string;
+  name: string;
+  carrier_type: 'manual' | 'shiprocket' | 'direct_carrier';
+  base_rate: number;
+  min_transit_days: number;
+  max_transit_days: number;
+  processing_days: number;
+  requires_signature: boolean;
+  is_active: boolean;
+  createdAt: string;
+}
+
+/** Product Option Group */
+export interface AdminProductOptionGroup {
+  group: string;
+  options: { label: string; value: string }[];
 }

@@ -25,6 +25,10 @@ export function ProductCard({ product }: ProductCardProps) {
   }, []);
 
   const inWishlist = isHydrated ? isInWishlist(product.id) : false;
+  const hasDiscount = Boolean(product.originalPrice && product.originalPrice > product.price);
+  const discountPercent = hasDiscount
+    ? Math.round(((product.originalPrice! - product.price) / product.originalPrice!) * 100)
+    : 0;
 
   return (
     <motion.div
@@ -44,6 +48,13 @@ export function ProductCard({ product }: ProductCardProps) {
           />
         </Link>
 
+        {/* Discount Badge */}
+        {hasDiscount && discountPercent > 0 && (
+          <span className="absolute left-3 top-3 z-10 rounded-full bg-[#062119]/90 backdrop-blur-sm text-[#F2C879] text-[10px] sm:text-[11px] font-semibold tracking-wider px-2.5 py-0.5 shadow-sm">
+            {discountPercent}% OFF
+          </span>
+        )}
+
         {/* Wishlist Button (Fades in on hover) */}
         <button
           onClick={(e) => {
@@ -61,12 +72,21 @@ export function ProductCard({ product }: ProductCardProps) {
         </button>
 
         {/* Quick Add Button (Slides up on hover) */}
-        <button
-          onClick={() => addToCart(product)}
-          className="absolute bottom-0 left-0 w-full bg-primary text-white hover:bg-emerald-accent transition-all duration-300 py-3.5 text-center text-[10px] tracking-[0.25em] font-semibold uppercase opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 cursor-pointer hidden md:block"
-        >
-          Quick Add
-        </button>
+        {product.has_variants ? (
+          <Link
+            href={`/product/${product.id}`}
+            className="absolute bottom-0 left-0 w-full bg-primary text-white hover:bg-emerald-accent transition-all duration-300 py-3.5 text-center text-[10px] tracking-[0.25em] font-semibold uppercase opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 hidden md:block"
+          >
+            Select Options
+          </Link>
+        ) : (
+          <button
+            onClick={() => addToCart(product)}
+            className="absolute bottom-0 left-0 w-full bg-primary text-white hover:bg-emerald-accent transition-all duration-300 py-3.5 text-center text-[10px] tracking-[0.25em] font-semibold uppercase opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 cursor-pointer hidden md:block"
+          >
+            Quick Add
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col space-y-1 py-3 px-1 text-left">
@@ -93,26 +113,41 @@ export function ProductCard({ product }: ProductCardProps) {
         )}
 
         {/* Prices */}
-        <div className="flex items-baseline gap-2 pt-0.5">
-          <span className="text-sm sm:text-base font-normal text-slate-900">
+        <div className="flex items-baseline gap-2 pt-0.5 flex-wrap">
+          <span className="text-sm sm:text-base font-medium text-slate-900">
+            {product.has_variants && <span className="text-xs font-normal text-slate-500 mr-1">From</span>}
             {getCurrencySymbol(product.currency)}
             {product.price.toLocaleString()}
           </span>
-          {product.originalPrice && product.originalPrice > product.price && (
-            <span className="text-[11px] sm:text-xs line-through text-slate-400 font-light">
-              {getCurrencySymbol(product.currency)}
-              {product.originalPrice.toLocaleString()}
-            </span>
+          {hasDiscount && (
+            <>
+              <span className="text-[11px] sm:text-xs line-through text-slate-400 font-light">
+                {getCurrencySymbol(product.currency)}
+                {product.originalPrice!.toLocaleString()}
+              </span>
+              <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                {discountPercent}% OFF
+              </span>
+            </>
           )}
         </div>
 
         {/* Mobile-only visible Add to Cart button */}
-        <button
-          onClick={() => addToCart(product)}
-          className="w-full bg-primary text-white hover:bg-emerald-accent active:bg-emerald-dark py-2.5 text-center text-[10px] tracking-[0.2em] font-medium uppercase mt-2 block md:hidden cursor-pointer"
-        >
-          Add to Cart
-        </button>
+        {product.has_variants ? (
+          <Link
+            href={`/product/${product.id}`}
+            className="w-full bg-primary text-white hover:bg-emerald-accent active:bg-emerald-dark py-2.5 text-center text-[10px] tracking-[0.2em] font-medium uppercase mt-2 block md:hidden cursor-pointer"
+          >
+            Select Options
+          </Link>
+        ) : (
+          <button
+            onClick={() => addToCart(product)}
+            className="w-full bg-primary text-white hover:bg-emerald-accent active:bg-emerald-dark py-2.5 text-center text-[10px] tracking-[0.2em] font-medium uppercase mt-2 block md:hidden cursor-pointer"
+          >
+            Add to Cart
+          </button>
+        )}
       </div>
     </motion.div>
   );

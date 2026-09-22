@@ -15,12 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { DataTable, DTColumn } from '../_components/data-table';
-import { ConfirmDialog } from '../_components/confirm-dialog';
-import { categoryService } from '../_services/category.service';
-import { attributeService } from '../_services/attribute.service';
-import { categoryAttributeService } from '../_services/category-attribute.service';
-import { AdminCategory, AdminAttribute, AdminCategoryAttribute } from '../_types';
+import { DataTable, DTColumn } from '../../_components/data-table';
+import { ConfirmDialog } from '../../_components/confirm-dialog';
+import { categoryService } from '../../_services/category.service';
+import { attributeService } from '../../_services/attribute.service';
+import { categoryAttributeService } from '../../_services/category-attribute.service';
+import { AdminCategory, AdminAttribute, AdminCategoryAttribute } from '../../_types';
 import { format } from 'date-fns';
 
 export default function CategoryAttributesPage() {
@@ -179,9 +179,12 @@ export default function CategoryAttributesPage() {
                   <SelectValue placeholder="Choose an attribute" />
                 </SelectTrigger>
                 <SelectContent>
-                  {attributes.map((a) => (
+                  {attributes.filter(a => !a.is_global).map((a) => (
                     <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                   ))}
+                  {attributes.filter(a => !a.is_global).length === 0 && (
+                    <SelectItem value="none" disabled>No linkable attributes available</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>

@@ -4,798 +4,410 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { 
-  ArrowLeft, ArrowRight, Save, Plus, Trash2, Settings2, Package, Tag, CheckCircle2 
+  ArrowLeft, Image as ImageIcon, Package, Tag, Layers, Truck, CheckCircle2, Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { MultiImageUpload } from '../../_components/multi-image-upload';
-import { ImageUpload } from '../../_components/image-upload';
-import { VideoUpload } from '../../_components/video-upload';
-import dynamic from 'next/dynamic';
-import 'react-quill/dist/quill.snow.css';
-
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ProductFormState } from '../../_types';
 import { productService } from '../../_services/product.service';
-import { categoryService } from '../../_services/category.service';
-import { categoryAttributeService } from '../../_services/category-attribute.service';
-import { attributeService } from '../../_services/attribute.service';
-import { regionService, Region } from '../../_services/region.service';
-import { AdminCategory, AdminCategoryAttribute, AdminAttribute, AdminProduct } from '../../_types';
-import { cn } from '@/lib/utils';
+import dynamic from 'next/dynamic';
 
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+// Lazy-load preview modal (avoids SSR issues)
+const ProductPreviewModal = dynamic(
+  () => import('./product-preview-modal').then(m => m.ProductPreviewModal),
+  { ssr: false }
+);
 
-const STEPS = [
-  { id: 1, title: 'Base Details', icon: Package },
-  { id: 2, title: 'Generate Variants', icon: Settings2 },
-  { id: 3, title: 'Configure Variants', icon: Tag },
-  { id: 4, title: 'Regional Pricing', icon: CheckCircle2 }
+// Step Components
+import { Step1ItemDetails } from './wizard-steps/step1-item-details';
+import { Step2Media } from './wizard-steps/step2-media';
+import { Step3Variations } from './wizard-steps/step3-variations';
+import { Step4Attributes } from './wizard-steps/step4-attributes';
+import { Step5Delivery } from './wizard-steps/step5-delivery';
+
+const SECTIONS = [
+  { id: 'item-details', title: 'Item Details', icon: Package, subtitle: 'Product name, category, SKU and description' },
+  { id: 'media', title: 'Media', icon: ImageIcon, subtitle: 'High resolution images and showcase video' },
+  { id: 'variations', title: 'Variations', icon: Layers, subtitle: 'Variation axes and SKU matrix' },
+  { id: 'attributes', title: 'Attributes', icon: Tag, subtitle: 'Gold solidity, materials, attributes and tags' },
+  { id: 'delivery', title: 'Pricing & Delivery', icon: Truck, subtitle: 'Regional pricing, inventory and shipping profiles' }
 ];
 
 export function ProductWizard({ mode = 'create', initialProduct = null }: { mode?: 'create' | 'edit', initialProduct?: any }) {
   const router = useRouter();
-  
-  // States
-  const [step, setStep] = useState(1);
+  const [activeSection, setActiveSection] = useState('item-details');
   const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<AdminCategory[]>([]);
-  const [createdProduct, setCreatedProduct] = useState<any>(initialProduct);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
-  // Form State: Step 1 (Base)
-  const [baseForm, setBaseForm] = useState({
-    images: [''] as string[],
+  // Centralized Massive Payload State
+  const [form, setForm] = useState<ProductFormState>({
     name: '',
-    categoryId: '',
+    category_id: '',
     description: '',
+    status: 'active',
+    is_featured: false,
+    sku: '',
+    images: [], 
     video: '',
-    details: [{ key: '', value: '' }] as { key: string, value: string }[],
-    has_variants: true,
-    price: 0,
-    discountPrice: '' as string | number,
-    stockQty: 0,
+    
+    has_variants: false,
+    prices_vary: false,
+    quantities_vary: false,
+    skus_vary: false,
+    processing_time_varies: false,
+    max_variation_axes: 2,
+    variation_axis_ids: [],
+    
+    variants: [],
+    
+    prices: [],
+    total_stock: undefined,
+    stock_qty: undefined,
+    
+    is_global_pricing_enabled: true,
+    allow_offers: false,
+    max_offer_discount_percent: undefined,
+    
+    tags: [],
+    materials: [],
+    gold_solidity: [],
+    gold_purity: [],
+    listing_attributes: {},
+    
+    processing_profile_id: undefined,
+    shipping_profile_id: undefined,
   });
 
-  // Form State: Step 2 (Attributes)
-  const [categoryAttributes, setCategoryAttributes] = useState<AdminCategoryAttribute[]>([]);
-  const [fullAttributes, setFullAttributes] = useState<AdminAttribute[]>([]);
-  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({});
-
-  // Form State: Step 3 (Variants)
-  const [variants, setVariants] = useState<any[]>([]);
-
-  // Form State: Step 4 (Pricing)
-  const [regions, setRegions] = useState<Region[]>([]);
-  const [regionalPricingRows, setRegionalPricingRows] = useState<
-    Record<string, { id: string; regionId: string; price: string; compare: string }[]>
-  >({});
-
+  // ── Edit mode prefill ──────────────────────────────────────────────────────
   useEffect(() => {
-    categoryService.getAll().then(setCategories);
-    attributeService.getAll().then(setFullAttributes);
-    regionService.getAll().then(setRegions);
-
     if (mode === 'edit' && initialProduct) {
-      // Hydrate Step 1
-      setBaseForm({
-        images: (initialProduct.images?.length ? initialProduct.images : ['']),
-        name: initialProduct.name,
-        categoryId: initialProduct.categoryId || '',
-        description: initialProduct.description || '',
-        video: initialProduct.video || '',
-        details: initialProduct.details?.length ? initialProduct.details : [{ key: '', value: '' }],
-        has_variants: Boolean(initialProduct.has_variants),
-        price: initialProduct.price || 0,
-        discountPrice: initialProduct.discountPrice || '',
-        stockQty: initialProduct.stockQty || 0,
+      const p = initialProduct;
+
+      const rawMaterials = p.materials_ids || (Array.isArray(p.materials) && typeof p.materials[0] === 'number' ? p.materials : p.listing_attributes?.materials?.attribute_value_ids || []);
+      const rawSolidity = p.gold_solidity_ids || (Array.isArray(p.gold_solidity) && typeof p.gold_solidity[0] === 'number' ? p.gold_solidity : p.listing_attributes?.gold_solidity?.attribute_value_ids || []);
+      const rawPurity = p.gold_purity_ids || (Array.isArray(p.gold_purity) && typeof p.gold_purity[0] === 'number' ? p.gold_purity : p.listing_attributes?.gold_purity?.attribute_value_ids || []);
+
+      const hasVariants = Boolean(p.has_variants ?? (p.variants && p.variants.length > 0));
+
+      setForm({
+        name: p.name || '',
+        category_id: p.category_id || p.categoryId || (p.category ? p.category.id : '') || '',
+        description: p.description || '',
+        status: p.status || 'active',
+        is_featured: p.isFeatured ?? p.is_featured ?? false,
+        sku: p.sku || '',
+        when_was_it_made: p.when_was_it_made || p.whenWasItMade || undefined,
+
+        images: Array.isArray(p.images) ? p.images : (p.product_images || []).map((img: any) => img.image_path || img.url),
+        video: p.video || '',
+
+        has_variants: hasVariants,
+        prices_vary: p.prices_vary ?? (p.variants && p.variants.some((v: any) => (v.prices && v.prices.length > 0) || v.price)) ?? false,
+        quantities_vary: p.quantities_vary ?? (p.variants && p.variants.length > 0) ?? false,
+        skus_vary: p.skus_vary ?? (p.variants && p.variants.some((v: any) => Boolean(v.sku))) ?? false,
+        processing_time_varies: p.processing_time_varies ?? false,
+        max_variation_axes: p.max_variation_axes ?? 2,
+        variation_axis_ids: (p.variation_axis_ids && p.variation_axis_ids.length > 0)
+          ? p.variation_axis_ids
+          : (p.attributes || []).map((a: any) => String(a.id || a.attribute_id)),
+
+        variants: (p.variants || []).map((v: any) => ({
+          id: v.id,
+          attributes: v.attribute_value_ids || v.attributes || [],
+          prices: (v.prices && v.prices.length > 0)
+            ? v.prices.map((pr: any) => ({
+                region_id: pr.region_id,
+                price: pr.price,
+                compare_at_price: pr.compare_at_price ?? undefined,
+              }))
+            : v.price
+            ? [{ region_id: 1, price: typeof v.price === 'object' ? v.price.amount : Number(v.price), compare_at_price: v.compare_at_price }]
+            : [],
+          stock_quantity: v.stock_quantity ?? v.stockQuantity ?? 0,
+          sku: v.sku || undefined,
+          processing_days: v.processing_days ?? undefined,
+          is_active: v.is_active ?? true,
+          weight_grams: v.weight_grams ?? undefined,
+          making_charges: v.making_charges ?? undefined,
+          variant_images: v.variant_images || [],
+        })),
+
+        prices: (p.prices || []).map((pr: any) => ({
+          region_id: pr.region_id,
+          price: pr.price,
+          compare_at_price: pr.compare_at_price ?? undefined,
+        })),
+
+        total_stock: p.total_stock ?? p.stock_qty ?? p.stockQty ?? undefined,
+        stock_qty: p.stock_qty ?? p.stockQty ?? undefined,
+
+        is_global_pricing_enabled: p.is_global_pricing_enabled ?? true,
+        allow_offers: p.allow_offers ?? false,
+        max_offer_discount_percent: p.max_offer_discount_percent ?? undefined,
+
+        tags: p.tags || [],
+        materials: rawMaterials,
+        gold_solidity: rawSolidity,
+        gold_purity: rawPurity,
+        listing_attributes: p.listing_attributes || {},
+
+        processing_profile_id: p.processing_profile_id ?? (p.processing_profile ? p.processing_profile.id : undefined),
+        shipping_profile_id: p.shipping_profile_id ?? (p.shipping_profile ? p.shipping_profile.id : undefined),
       });
-
-      // Hydrate Variants & Pricing
-      if (initialProduct.has_variants && initialProduct.variants) {
-        setVariants(initialProduct.variants);
-        
-        // Compute selected attributes from variants
-        const selAttrs: Record<string, string[]> = {};
-        initialProduct.variants.forEach((v: any) => {
-          v.attributeValues?.forEach((av: any) => {
-            if (!selAttrs[av.attribute_id]) selAttrs[av.attribute_id] = [];
-            if (!selAttrs[av.attribute_id].includes(String(av.attribute_value_id))) {
-              selAttrs[av.attribute_id].push(String(av.attribute_value_id));
-            }
-          });
-        });
-        setSelectedAttributes(selAttrs);
-
-        // Compute prices
-        const rPrices: any = {};
-        initialProduct.variants.forEach((v: any) => {
-          if (v.prices) {
-            rPrices[v.id] = v.prices.map((p: any) => ({
-              id: crypto.randomUUID(),
-              regionId: String(p.region_id),
-              price: p.price,
-              compare: p.compare_at_price || ''
-            }));
-          }
-        });
-        setRegionalPricingRows(rPrices);
-      } else if (!initialProduct.has_variants && initialProduct.local_prices) {
-        // Simple product pricing
-        // initialProduct.local_prices is e.g. { "IN": { price: 100, discountPrice: 90 } }
-        // We need to map region code "IN" back to region ID for our state
-        const rPrices: any = { 'base': {} };
-        // We will do this mapping below in another useEffect after regions are loaded
-      }
     }
   }, [mode, initialProduct]);
 
+  // ── On-Scroll Tracking (Scroll Spy) ────────────────────────────────────────
   useEffect(() => {
-    if (mode === 'edit' && initialProduct && !initialProduct.has_variants && initialProduct.local_prices && regions.length > 0) {
-      const bPrices: any[] = [];
-      Object.keys(initialProduct.local_prices).forEach(code => {
-        const region = regions.find(r => r.currency_code === code || r.name === code);
-        if (region) {
-          bPrices.push({
-            id: crypto.randomUUID(),
-            regionId: String(region.id),
-            price: initialProduct.local_prices[code].price,
-            compare: initialProduct.local_prices[code].discountPrice || ''
-          });
-        }
-      });
-      setRegionalPricingRows(prev => ({ ...prev, 'base': bPrices }));
-    }
-  }, [regions, mode, initialProduct]);
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 220; // Offset for sticky topbar + stepper
 
-  // Initialize default rows (US, IN, Other) when reaching step 4 or loading regions
-  useEffect(() => {
-    const items = baseForm.has_variants ? variants : [{ id: 'base' }];
-    const newRows = { ...regionalPricingRows };
-    let changed = false;
-
-    items.forEach(item => {
-      if (!newRows[item.id] || newRows[item.id].length === 0) {
-        const usRegion = regions.find(r => r.currency_code === 'USD' && r.name.toUpperCase().includes('UNITED STATES'));
-        const inRegion = regions.find(r => r.currency_code === 'INR' || r.name.toUpperCase().includes('INDIA'));
-        const otherRegion = regions.find(r => r.name.toUpperCase().includes('REST OF WORLD') || r.name.toUpperCase().includes('OTHER'));
-
-        newRows[item.id] = [
-          { id: crypto.randomUUID(), regionId: usRegion ? String(usRegion.id) : '', price: '', compare: '' },
-          { id: crypto.randomUUID(), regionId: inRegion ? String(inRegion.id) : '', price: '', compare: '' },
-          { id: crypto.randomUUID(), regionId: otherRegion ? String(otherRegion.id) : '', price: '', compare: '' },
-        ];
-        changed = true;
-      }
-    });
-
-    if (changed) setRegionalPricingRows(newRows);
-  }, [step, variants, baseForm.has_variants, regions]);
-
-  useEffect(() => {
-    if (baseForm.categoryId) {
-      categoryAttributeService.getByCategory(baseForm.categoryId).then(setCategoryAttributes);
-    } else {
-      setCategoryAttributes([]);
-    }
-    // Reset selected attributes when category changes
-    setSelectedAttributes({});
-  }, [baseForm.categoryId]);
-
-  // --- Actions ---
-
-  const handleCreateBaseProduct = async () => {
-    if (!baseForm.name || !baseForm.categoryId || !baseForm.images[0]) {
-      toast.error('Name, Category, and Primary Image are required.');
-      return;
-    }
-    if (!baseForm.has_variants) {
-      if (baseForm.price <= 0 || baseForm.stockQty < 0) {
-        toast.error('Price and Stock are required for simple products.');
-        return;
-      }
-    }
-
-    setLoading(true);
-    try {
-      const payload = {
-        ...baseForm,
-        video: baseForm.video || null,
-        images: baseForm.images.filter(Boolean),
-        details: baseForm.details.filter(d => d.key.trim() || d.value.trim()),
-        discountPrice: baseForm.discountPrice || null,
-      };
-      
-      let product;
-      if (mode === 'edit' && createdProduct) {
-        product = await productService.update(createdProduct.id, payload as any);
-        setCreatedProduct(product); // handle generic update response if it wraps in data
-        toast.success('Base product updated successfully!');
-      } else {
-        product = await productService.create(payload);
-        setCreatedProduct(product);
-        toast.success('Base product created successfully!');
-      }
-      
-      if (baseForm.has_variants) {
-        setStep(2);
-      } else {
-        // Skip variants, jump to pricing or finish
-        setStep(4);
-      }
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to create product');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGenerateCombinations = async () => {
-    if (!createdProduct) return;
-    const attrCount = Object.keys(selectedAttributes).length;
-    if (attrCount === 0 || attrCount > 2) {
-      toast.error('Select 1 or 2 attributes to generate variants.');
-      return;
-    }
-    
-    // Check if any selected attribute has no values
-    for (const [attrId, vals] of Object.entries(selectedAttributes)) {
-      if (vals.length === 0) {
-        toast.error(`Please select at least one value for each chosen attribute.`);
-        return;
-      }
-    }
-
-    setLoading(true);
-    try {
-      const result = await productService.generateCombinations(createdProduct.id, selectedAttributes);
-      setVariants(result.data.variants || []);
-      toast.success('Variants generated successfully!');
-      setStep(3);
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to generate variants');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdateVariants = async () => {
-    if (!createdProduct) return;
-    setLoading(true);
-    try {
-      // Typically we'd update them one by one or via a bulk endpoint.
-      // Assuming we update one by one for now since spec showed PUT /variants/{id}
-      for (const variant of variants) {
-        await productService.updateVariant(createdProduct.id, variant.id, {
-          weight_grams: variant.weight_grams,
-          making_charges: variant.making_charges,
-          stock_quantity: variant.stock_quantity,
-          is_active: variant.is_active !== false, // default true
-        });
-      }
-      toast.success('Variants updated successfully!');
-      setStep(4);
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to update variants');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFinish = async () => {
-    if (!createdProduct) return;
-    setLoading(true);
-    try {
-      if (baseForm.has_variants) {
-        // Submit for each variant
-        for (const variant of variants) {
-          const rows = regionalPricingRows[variant.id];
-          if (rows) {
-            const payloadPrices = rows
-              .filter(r => r.regionId && Number(r.price) > 0)
-              .map(r => ({
-                region_id: r.regionId,
-                price: Number(r.price),
-                compare_at_price: r.compare ? Number(r.compare) : null
-              }));
-            
-            if (payloadPrices.length > 0) {
-              await productService.bulkUpdatePrices(variant.id, payloadPrices);
-            }
+      for (let i = SECTIONS.length - 1; i >= 0; i--) {
+        const el = document.getElementById(`section-${SECTIONS[i].id}`);
+        if (el) {
+          const top = el.offsetTop;
+          if (scrollPosition >= top) {
+            setActiveSection(SECTIONS[i].id);
+            break;
           }
         }
-      } else {
-        // Simple product: submit local_prices to the base product
-        const rows = regionalPricingRows['base'];
-        if (rows) {
-          const localPricesObj: any = {};
-          rows.forEach(r => {
-            if (r.regionId && Number(r.price) > 0) {
-              const region = regions.find(reg => String(reg.id) === String(r.regionId));
-              const rCode = region?.currency_code || region?.name || r.regionId;
-              localPricesObj[rCode] = {
-                price: Number(r.price),
-                discountPrice: r.compare ? Number(r.compare) : null
-              };
-            }
-          });
-          
-          await productService.update(createdProduct.id, {
-            ...baseForm,
-            images: baseForm.images.filter(Boolean),
-            localPrices: localPricesObj
-          } as any);
-        }
       }
-      toast.success('Product setup complete!');
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToSection = (sectionId: string) => {
+    const el = document.getElementById(`section-${sectionId}`);
+    if (el) {
+      const headerOffset = 180; // Offset for sticky header & stepper
+      const elementPosition = el.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth',
+      });
+      setActiveSection(sectionId);
+    }
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      if (mode === 'create') {
+        await productService.create(form);
+        toast.success('Product created successfully!');
+      } else {
+        await productService.update(initialProduct.id, form);
+        toast.success('Product updated successfully!');
+      }
       router.push('/admin/products');
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to save regional prices');
+      toast.error(error?.response?.data?.message || 'Failed to save product');
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Render Steps ---
-
-  const renderStep1 = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Product Name *</Label>
-            <Input value={baseForm.name} onChange={e => setBaseForm({ ...baseForm, name: e.target.value })} placeholder="e.g. Classic Solitaire" />
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Category *</Label>
-            <Select value={baseForm.categoryId} onValueChange={v => setBaseForm({ ...baseForm, categoryId: v })}>
-              <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
-              <SelectContent>
-                {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center justify-between p-4 border rounded-lg bg-slate-50/50">
-            <div>
-              <Label className="text-base font-semibold text-slate-800">Has Variants?</Label>
-              <p className="text-sm text-slate-500">Toggle on if this product has multiple sizes, colors, etc.</p>
-            </div>
-            <Switch checked={baseForm.has_variants} onCheckedChange={c => setBaseForm({ ...baseForm, has_variants: c })} />
-          </div>
-
-          {!baseForm.has_variants && (
-            <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg bg-white">
-              <div className="space-y-2">
-                <Label>Base Price (₹) *</Label>
-                <Input type="number" min="0" value={baseForm.price} onChange={e => setBaseForm({ ...baseForm, price: Number(e.target.value) })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Discount Price</Label>
-                <Input type="number" min="0" value={baseForm.discountPrice} onChange={e => setBaseForm({ ...baseForm, discountPrice: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Stock Quantity *</Label>
-                <Input type="number" min="0" value={baseForm.stockQty} onChange={e => setBaseForm({ ...baseForm, stockQty: Number(e.target.value) })} />
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <div className="bg-white [&_.ql-editor]:min-h-[150px] [&_.ql-toolbar]:rounded-t-md [&_.ql-container]:rounded-b-md">
-              <ReactQuill theme="snow" value={baseForm.description} onChange={v => setBaseForm({ ...baseForm, description: v })} />
-            </div>
-          </div>
-
-          <div className="space-y-4 pt-4 border-t">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base font-semibold text-slate-800">Product Details</Label>
-                <p className="text-sm text-slate-500">Add key specifications (e.g. Material: Gold) to show in a table format.</p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setBaseForm({ ...baseForm, details: [...baseForm.details, { key: '', value: '' }] })}
-              >
-                <Plus className="h-4 w-4 mr-2" /> Add Row
-              </Button>
-            </div>
-            <div className="space-y-2 border rounded-md p-4 bg-slate-50/50">
-              {baseForm.details.map((detail, index) => (
-                <div key={index} className="flex gap-2 items-center">
-                  <Input 
-                    placeholder="Feature (e.g. Material)" 
-                    value={detail.key}
-                    onChange={(e) => {
-                      const newDetails = [...baseForm.details];
-                      newDetails[index].key = e.target.value;
-                      setBaseForm({ ...baseForm, details: newDetails });
-                    }}
-                  />
-                  <Input 
-                    placeholder="Value (e.g. 18K Gold)" 
-                    value={detail.value}
-                    onChange={(e) => {
-                      const newDetails = [...baseForm.details];
-                      newDetails[index].value = e.target.value;
-                      setBaseForm({ ...baseForm, details: newDetails });
-                    }}
-                  />
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-destructive shrink-0"
-                    onClick={() => {
-                      const newDetails = baseForm.details.filter((_, i) => i !== index);
-                      setBaseForm({ ...baseForm, details: newDetails });
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              {baseForm.details.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-2">No details added. Click "Add Row" to start.</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <VideoUpload
-            value={baseForm.video || ''}
-            onChange={(v) => setBaseForm({ ...baseForm, video: v })}
-            label="Product Video"
-          />
-          <ImageUpload
-            value={baseForm.images[0] || ''}
-            onChange={(v) => setBaseForm({ ...baseForm, images: [v, ...baseForm.images.slice(1)] })}
-            label="Primary Image *"
-          />
-          <MultiImageUpload
-            values={baseForm.images.slice(1)}
-            onChange={(urls) => setBaseForm({ ...baseForm, images: [baseForm.images[0] || '', ...urls] })}
-            label="Gallery Images"
-            maxImages={4}
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-end pt-4 border-t">
-        <Button onClick={handleCreateBaseProduct} disabled={loading} size="lg" className="gap-2">
-          {loading ? (mode === 'edit' ? 'Updating...' : 'Creating...') : 'Save & Continue'}
-          {!loading && <ArrowRight className="h-4 w-4" />}
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderStep2 = () => (
-    <div className="space-y-6">
-      <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-lg">
-        <h3 className="font-medium text-blue-900 mb-1">Select Variation Axes</h3>
-        <p className="text-sm text-blue-700">Choose up to 2 attributes (e.g. Size, Metal Karat) to generate combinations. The options below are based on the selected Category.</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-6">
-        {categoryAttributes.map(ca => {
-          const fullAttr = fullAttributes.find(a => a.id === ca.attribute_id);
-          if (!fullAttr) return null;
-          
-          const isSelected = !!selectedAttributes[ca.attribute_id];
-          const selectedVals = selectedAttributes[ca.attribute_id] || [];
-
-          return (
-            <Card key={ca.id} className={cn("transition-colors", isSelected ? "border-primary ring-1 ring-primary" : "")}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{fullAttr.name}</CardTitle>
-                    {ca.is_required && <Badge variant="secondary" className="mt-1">Required</Badge>}
-                  </div>
-                  <Switch 
-                    checked={isSelected}
-                    onCheckedChange={(c) => {
-                      const newSelected = { ...selectedAttributes };
-                      if (c) {
-                        if (Object.keys(newSelected).length >= 2) {
-                          toast.error("You can only select up to 2 attributes.");
-                          return;
-                        }
-                        newSelected[ca.attribute_id] = [];
-                      } else {
-                        delete newSelected[ca.attribute_id];
-                      }
-                      setSelectedAttributes(newSelected);
-                    }}
-                  />
-                </div>
-              </CardHeader>
-              {isSelected && (
-                <CardContent>
-                  <Label className="mb-2 block">Select Values:</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {fullAttr.values?.map(val => (
-                      <Badge 
-                        key={val.id} 
-                        variant={selectedVals.includes(val.id) ? "default" : "outline"}
-                        className="cursor-pointer hover:opacity-80 px-3 py-1"
-                        onClick={() => {
-                          const newSelected = { ...selectedAttributes };
-                          if (newSelected[ca.attribute_id].includes(val.id)) {
-                            newSelected[ca.attribute_id] = newSelected[ca.attribute_id].filter(id => id !== val.id);
-                          } else {
-                            newSelected[ca.attribute_id].push(val.id);
-                          }
-                          setSelectedAttributes(newSelected);
-                        }}
-                      >
-                        {val.value}
-                      </Badge>
-                    ))}
-                    {(!fullAttr.values || fullAttr.values.length === 0) && (
-                      <span className="text-sm text-muted-foreground">No values added yet for this attribute.</span>
-                    )}
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-          );
-        })}
-        {categoryAttributes.length === 0 && (
-          <div className="col-span-2 text-center py-8 text-muted-foreground">
-            No attributes mapped to this category. Please map attributes first in the Category Mappings page.
-          </div>
-        )}
-      </div>
-
-      <div className="flex justify-between pt-4 border-t">
-        <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
-        <Button onClick={handleGenerateCombinations} disabled={loading} size="lg" className="gap-2">
-          {loading ? 'Generating...' : 'Generate Variants'}
-          {!loading && <ArrowRight className="h-4 w-4" />}
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderStep3 = () => (
-    <div className="space-y-6">
-      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-        <h3 className="font-medium text-amber-900 mb-1">Configure Combinations</h3>
-        <p className="text-sm text-amber-800">Set weights and stock for each generated variant.</p>
-      </div>
-
-      <div className="border rounded-lg overflow-x-auto">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-slate-50 border-b text-slate-700">
-            <tr>
-              <th className="px-4 py-3 font-semibold">Variant Attributes</th>
-              <th className="px-4 py-3 font-semibold w-24">Stock</th>
-              <th className="px-4 py-3 font-semibold w-32">Weight (g)</th>
-              <th className="px-4 py-3 font-semibold w-32">Making Chg</th>
-              <th className="px-4 py-3 font-semibold w-24 text-center">Active</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y bg-white">
-            {variants.map((variant, idx) => (
-              <tr key={variant.id || idx} className="hover:bg-slate-50/50">
-                <td className="px-4 py-3 font-medium text-slate-900">
-                  {variant.attribute_value_ids?.map((id: any) => {
-                    // Try to find the name of the value
-                    const vName = fullAttributes.flatMap(a => a.values).find(v => v?.id == id)?.value || `Value ${id}`;
-                    return <Badge key={id} variant="secondary" className="mr-1">{vName}</Badge>;
-                  }) || variant.sku}
-                </td>
-                <td className="px-4 py-2">
-                  <Input type="number" min="0" value={variant.stock_quantity || 0} onChange={e => {
-                    const newVariants = [...variants];
-                    newVariants[idx].stock_quantity = Number(e.target.value);
-                    setVariants(newVariants);
-                  }} />
-                </td>
-                <td className="px-4 py-2">
-                  <Input type="number" step="0.01" min="0" value={variant.weight_grams || ''} onChange={e => {
-                    const newVariants = [...variants];
-                    newVariants[idx].weight_grams = e.target.value ? Number(e.target.value) : null;
-                    setVariants(newVariants);
-                  }} />
-                </td>
-                <td className="px-4 py-2">
-                  <Input type="number" step="0.01" min="0" value={variant.making_charges || ''} onChange={e => {
-                    const newVariants = [...variants];
-                    newVariants[idx].making_charges = e.target.value ? Number(e.target.value) : null;
-                    setVariants(newVariants);
-                  }} />
-                </td>
-                <td className="px-4 py-2 text-center">
-                  <Switch checked={variant.is_active !== false} onCheckedChange={c => {
-                    const newVariants = [...variants];
-                    newVariants[idx].is_active = c;
-                    setVariants(newVariants);
-                  }} />
-                </td>
-              </tr>
-            ))}
-            {variants.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No variants found.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="flex justify-between pt-4 border-t">
-        <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
-        <Button onClick={handleUpdateVariants} disabled={loading} size="lg" className="gap-2">
-          {loading ? 'Saving...' : 'Save Variants'}
-          {!loading && <ArrowRight className="h-4 w-4" />}
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderStep4 = () => (
-    <div className="space-y-6">
-      <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-        <h3 className="font-medium text-emerald-900 mb-1">Regional Pricing</h3>
-        <p className="text-sm text-emerald-800">Set prices across different regions. This overrides the base price for customers in these regions.</p>
-      </div>
-
-      <div className="space-y-6">
-        {(!baseForm.has_variants ? [{ id: 'base', label: 'Simple Product Pricing' }] : variants.map(v => ({
-          id: v.id,
-          label: v.sku || (v.attribute_value_ids?.map((id: any) => fullAttributes.flatMap(a => a.values).find(val => val?.id == id)?.value).join(' - ') || 'Variant')
-        }))).map(item => (
-          <Card key={item.id} className="border shadow-sm">
-            <CardHeader className="bg-slate-50 border-b py-3">
-              <CardTitle className="text-sm font-semibold">{item.label}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-white border-b text-slate-500">
-                  <tr>
-                    <th className="px-4 py-2 font-medium">Region</th>
-                    <th className="px-4 py-2 font-medium">Price</th>
-                    <th className="px-4 py-2 font-medium">Compare At (Discount)</th>
-                    <th className="px-4 py-2 font-medium w-16"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y bg-white">
-                  {(regionalPricingRows[item.id] || []).map((row, index) => (
-                    <tr key={row.id}>
-                      <td className="px-4 py-2">
-                        <Select 
-                          value={row.regionId} 
-                          onValueChange={v => {
-                            const newRows = [...regionalPricingRows[item.id]];
-                            newRows[index].regionId = v;
-                            setRegionalPricingRows({ ...regionalPricingRows, [item.id]: newRows });
-                          }}
-                        >
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select Region" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {regions.map(r => (
-                              <SelectItem key={r.id} value={String(r.id)}>{r.name} ({r.currency_symbol})</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="px-4 py-2">
-                        <Input type="number" min="0" placeholder="0.00" value={row.price} onChange={e => {
-                          const newRows = [...regionalPricingRows[item.id]];
-                          newRows[index].price = e.target.value;
-                          setRegionalPricingRows({ ...regionalPricingRows, [item.id]: newRows });
-                        }} />
-                      </td>
-                      <td className="px-4 py-2">
-                        <Input type="number" min="0" placeholder="0.00" value={row.compare} onChange={e => {
-                          const newRows = [...regionalPricingRows[item.id]];
-                          newRows[index].compare = e.target.value;
-                          setRegionalPricingRows({ ...regionalPricingRows, [item.id]: newRows });
-                        }} />
-                      </td>
-                      <td className="px-4 py-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => {
-                            const newRows = regionalPricingRows[item.id].filter(r => r.id !== row.id);
-                            setRegionalPricingRows({ ...regionalPricingRows, [item.id]: newRows });
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                  <tr>
-                    <td colSpan={4} className="p-3 bg-slate-50/50">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full gap-2 border-dashed border-slate-300 text-slate-500 hover:text-slate-700 hover:border-slate-400"
-                        onClick={() => {
-                          const newRows = [...(regionalPricingRows[item.id] || [])];
-                          newRows.push({ id: crypto.randomUUID(), regionId: '', price: '', compare: '' });
-                          setRegionalPricingRows({ ...regionalPricingRows, [item.id]: newRows });
-                        }}
-                      >
-                        <Plus className="h-4 w-4" /> Add Region Row
-                      </Button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="flex justify-between pt-4 border-t">
-        <Button variant="outline" onClick={() => setStep(baseForm.has_variants ? 3 : 1)}>Back</Button>
-        <Button onClick={handleFinish} disabled={loading} size="lg" className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-          {loading ? 'Saving...' : 'Finish Setup'}
-          {!loading && <CheckCircle2 className="h-4 w-4" />}
-        </Button>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6 pb-28">
+      {/* Top Title Bar */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.push('/admin/products')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{mode === 'edit' ? 'Edit Product' : 'Add New Product'}</h1>
-          <p className="text-sm text-slate-500">{mode === 'edit' ? 'Update your product and its variants.' : 'Create a product with variants step-by-step.'}</p>
+          <p className="text-sm text-slate-500">Configure your product, media, variations, attributes and pricing on a single page.</p>
         </div>
       </div>
 
-      {/* Stepper Header */}
-      <div className="flex items-center justify-between p-4 bg-white border rounded-xl shadow-sm">
-        {(baseForm.has_variants ? STEPS : STEPS.filter(s => s.id === 1 || s.id === 4)).map((s, i, arr) => (
-          <React.Fragment key={s.id}>
-            <div className={cn("flex flex-col items-center gap-2", step >= s.id ? "text-primary" : "text-slate-400")}>
-              <div className={cn(
-                "h-10 w-10 rounded-full flex items-center justify-center border-2 transition-colors",
-                step > s.id ? "bg-primary border-primary text-primary-foreground" :
-                step === s.id ? "border-primary bg-primary/10" : "border-slate-200 bg-slate-50"
-              )}>
-                <s.icon className="h-5 w-5" />
-              </div>
-              <span className="text-xs font-semibold uppercase tracking-wider">{s.title}</span>
-            </div>
-            {i < arr.length - 1 && (
-              <div className={cn(
-                "flex-1 h-0.5 mx-4 transition-colors",
-                step > s.id ? "bg-primary" : "bg-slate-200"
-              )} />
-            )}
-          </React.Fragment>
-        ))}
+      {/* Sticky Stepper Navigation (Scroll-spy) */}
+      <div className="sticky top-14 z-30 bg-white/95 backdrop-blur-md border border-slate-200/80 rounded-2xl shadow-sm px-6 py-5 transition-all duration-300">
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
+          {SECTIONS.map((s, i, arr) => {
+            const isActive = activeSection === s.id;
+            const activeIndex = SECTIONS.findIndex((x) => x.id === activeSection);
+            const isPassed = activeIndex > i;
+
+            return (
+              <React.Fragment key={s.id}>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection(s.id)}
+                  className={`flex flex-col items-center gap-2 cursor-pointer transition-all duration-300 group shrink-0 ${
+                    isActive ? 'text-primary' : isPassed ? 'text-emerald-700' : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <div
+                    className={`h-11 w-11 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                      isActive
+                        ? 'border-primary bg-primary/10 shadow-sm ring-4 ring-primary/15 text-primary'
+                        : isPassed
+                        ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
+                        : 'border-slate-200 bg-slate-50 text-slate-400 group-hover:border-slate-300 group-hover:bg-slate-100'
+                    }`}
+                  >
+                    <s.icon className="h-5 w-5" />
+                  </div>
+                  <span className={`text-[11px] sm:text-xs uppercase tracking-wider whitespace-nowrap leading-normal py-0.5 transition-colors ${
+                    isActive ? 'text-primary font-bold' : isPassed ? 'text-emerald-700 font-medium' : 'text-slate-500'
+                  }`}>
+                    {s.title}
+                  </span>
+                </button>
+
+                {i < arr.length - 1 && (
+                  <div
+                    className={`flex-1 min-w-4 sm:min-w-10 h-0.5 transition-colors duration-300 self-center mb-6 ${
+                      isPassed ? 'bg-emerald-500' : 'bg-slate-200'
+                    }`}
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Step Content */}
-      <Card className="border-0 shadow-sm ring-1 ring-slate-200">
-        <CardContent className="p-6">
-          {step === 1 && renderStep1()}
-          {step === 2 && renderStep2()}
-          {step === 3 && renderStep3()}
-          {step === 4 && renderStep4()}
-        </CardContent>
-      </Card>
+      {/* ── Single-Page Continuous Form Sections ── */}
+      <div className="space-y-8">
+        
+        {/* Section 1: Item Details */}
+        <section id="section-item-details" className="scroll-mt-44">
+          <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden bg-white">
+            <CardHeader className="border-b bg-slate-50/70 py-4 px-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                  <Package className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-serif font-semibold text-slate-900">Item Details</CardTitle>
+                  <CardDescription className="text-xs text-slate-500 mt-0.5">Product title, category mapping, SKU code, status and rich description</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 sm:p-8">
+              <Step1ItemDetails form={form} setForm={setForm} />
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Section 2: Media */}
+        <section id="section-media" className="scroll-mt-44">
+          <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden bg-white">
+            <CardHeader className="border-b bg-slate-50/70 py-4 px-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                  <ImageIcon className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-serif font-semibold text-slate-900">Media & Visuals</CardTitle>
+                  <CardDescription className="text-xs text-slate-500 mt-0.5">High-definition gallery images (up to 20) and product video</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 sm:p-8">
+              <Step2Media form={form} setForm={setForm} />
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Section 3: Variations */}
+        <section id="section-variations" className="scroll-mt-44">
+          <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-visible bg-white">
+            <CardHeader className="border-b bg-slate-50/70 py-4 px-6 rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                  <Layers className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-serif font-semibold text-slate-900">Product Variations</CardTitle>
+                  <CardDescription className="text-xs text-slate-500 mt-0.5">Configure variation axes (e.g. Ring Size, Metal Type) and generated SKU matrix</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 sm:p-8 overflow-visible">
+              <Step3Variations form={form} setForm={setForm} />
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Section 4: Attributes */}
+        <section id="section-attributes" className="scroll-mt-44">
+          <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-visible bg-white">
+            <CardHeader className="border-b bg-slate-50/70 py-4 px-6 rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                  <Tag className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-serif font-semibold text-slate-900">Attributes & Specifications</CardTitle>
+                  <CardDescription className="text-xs text-slate-500 mt-0.5">Gold purity, metal solidity, category attributes, materials and discovery tags</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 sm:p-8 overflow-visible">
+              <Step4Attributes form={form} setForm={setForm} />
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Section 5: Pricing & Delivery */}
+        <section id="section-delivery" className="scroll-mt-44">
+          <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden bg-white">
+            <CardHeader className="border-b bg-slate-50/70 py-4 px-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                  <Truck className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-serif font-semibold text-slate-900">Pricing, Stock & Delivery</CardTitle>
+                  <CardDescription className="text-xs text-slate-500 mt-0.5">Base & regional prices, inventory stock levels, processing and shipping profiles</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 sm:p-8">
+              <Step5Delivery form={form} setForm={setForm} />
+            </CardContent>
+          </Card>
+        </section>
+      </div>
+
+      {/* Fixed Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200 z-50 flex justify-between items-center px-6 sm:px-10 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] md:pl-72">
+        <Button variant="outline" onClick={() => router.push('/admin/products')} className="gap-2">
+          <ArrowLeft className="h-4 w-4" /> Back to Products
+        </Button>
+        <div className="flex items-center gap-3">
+          {/* Preview Product */}
+          <Button
+            variant="outline"
+            className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300"
+            onClick={() => setPreviewOpen(true)}
+          >
+            <Eye className="h-4 w-4" />
+            Preview
+          </Button>
+          
+          <Button onClick={handleSave} disabled={loading} size="lg" className="gap-2 bg-emerald-600 hover:bg-emerald-700 font-medium px-6">
+            {loading ? 'Saving...' : mode === 'edit' ? 'Update Product' : 'Create Product'}
+            {!loading && <CheckCircle2 className="h-4 w-4" />}
+          </Button>
+        </div>
+      </div>
+
+      {/* Product Preview Modal */}
+      {previewOpen && (
+        <ProductPreviewModal
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          form={form}
+        />
+      )}
     </div>
   );
 }

@@ -18,7 +18,7 @@ const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
 import { DataTable, DTColumn, DTFilter } from '../_components/data-table';
 import { FormModal } from '../_components/form-modal';
 import { ConfirmDialog } from '../_components/confirm-dialog';
-import { DetailModal } from '../_components/detail-modal';
+import { ProductViewModal } from './_components/product-view-modal';
 import { ImageUpload } from '../_components/image-upload';
 import { MultiImageUpload } from '../_components/multi-image-upload';
 import { productService } from '../_services/product.service';
@@ -33,7 +33,7 @@ export default function ProductsPage() {
   const [data, setData] = useState<AdminProduct[]>([]);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewItem, setViewItem] = useState<AdminProduct | null>(null);
+  const [viewProductId, setViewProductId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminProduct | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -198,17 +198,15 @@ export default function ProductsPage() {
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => window.location.href = `/admin/products/${row.id}/edit`}>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewItem(row)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 cursor-pointer" onClick={() => setViewProductId(row.id)}>
               <Eye className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteTarget(row)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive cursor-pointer" onClick={() => setDeleteTarget(row)}>
               <Trash2 className="h-4 w-4" />
             </Button>
           </>
         )}
       />
-
-
 
       <ConfirmDialog
         open={!!deleteTarget}
@@ -219,59 +217,14 @@ export default function ProductsPage() {
         loading={deleting}
       />
 
-      {viewItem && (
-        <DetailModal
-          open={!!viewItem}
-          onOpenChange={() => setViewItem(null)}
-          title="Product Details"
-          fields={[
-            {
-              label: 'Images',
-              value: viewItem.images && viewItem.images.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {viewItem.images.map((img, idx) => (
-                    <img
-                      key={idx}
-                      src={img}
-                      alt=""
-                      className={cn(
-                        "rounded-md object-cover border",
-                        idx === 0 ? "h-16 w-16 border-primary ring-2 ring-primary/20" : "h-12 w-12 opacity-80"
-                      )}
-                      title={idx === 0 ? "Primary Image" : `Gallery Image ${idx}`}
-                    />
-                  ))}
-                </div>
-              ) : '—'
-            },
-            { label: 'Name', value: viewItem.name },
-            { label: 'Category', value: catName(viewItem.categoryId) },
-            { label: 'Has Variants?', value: viewItem.has_variants ? 'Yes' : 'No' },
-            ...(viewItem.has_variants ? [] : [
-              { label: 'SKU', value: <code className="font-mono text-sm">{viewItem.sku}</code> },
-              { label: 'Price', value: `₹${viewItem.price?.toLocaleString() || 0}` },
-              { label: 'Discount Price', value: viewItem.discountPrice ? `₹${viewItem.discountPrice.toLocaleString()}` : '—' },
-              { label: 'Stock', value: viewItem.stockQty }
-            ]),
-
-
-            { label: 'Featured', value: viewItem.isFeatured ? 'Yes' : 'No' },
-            {
-              label: 'Status',
-              value: (
-                <span className={cn(
-                  "px-2 py-0.5 rounded-full text-xs font-semibold uppercase",
-                  viewItem.status === 'active' ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-800"
-                )}>
-                  {viewItem.status}
-                </span>
-              )
-            },
-            { label: 'Description', value: viewItem.description ? <div dangerouslySetInnerHTML={{ __html: viewItem.description }} className="prose prose-sm max-w-none dark:prose-invert" /> : '—' },
-            { label: 'Created', value: format(new Date(viewItem.createdAt), 'dd MMM yyyy') },
-          ]}
-        />
-      )}
+      <ProductViewModal
+        productId={viewProductId}
+        open={Boolean(viewProductId)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setViewProductId(null);
+        }}
+        categoriesList={categories}
+      />
     </div>
   );
 }

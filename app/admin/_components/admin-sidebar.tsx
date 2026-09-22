@@ -16,6 +16,10 @@ import {
   MessageSquare,
   Tags,
   Link as LinkIcon,
+  Globe,
+  Clock,
+  Truck,
+  List,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -32,18 +36,32 @@ import {
 } from '@/components/ui/sidebar';
 import { useAdminAuthStore } from '../_store/admin-auth';
 
-const navItems = [
-  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { label: 'Banners', href: '/admin/banners', icon: ImageIcon },
-  { label: 'Categories', href: '/admin/categories', icon: Layers3 },
-  { label: 'Products', href: '/admin/products', icon: Package },
-  { label: 'Attributes', href: '/admin/attributes', icon: Tags },
-  { label: 'Category Mappings', href: '/admin/category-attributes', icon: LinkIcon },
-  { label: 'Reviews', href: '/admin/reviews', icon: MessageSquare },
-  { label: 'Bespoke', href: '/admin/bespoke-orders', icon: Gem },
-  { label: 'Coupons', href: '/admin/coupons', icon: TicketPercent },
-  { label: 'Orders', href: '/admin/orders', icon: ShoppingCart },
-  { label: 'Users', href: '/admin/users', icon: Users },
+const menuGroups = [
+  {
+    label: 'Menu',
+    items: [
+      { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+      { label: 'Banners', href: '/admin/banners', icon: ImageIcon },
+      { label: 'Products', href: '/admin/products', icon: Package },
+      { label: 'Reviews', href: '/admin/reviews', icon: MessageSquare },
+      { label: 'Personalised', href: '/admin/personalised-orders', icon: Gem },
+      { label: 'Coupons', href: '/admin/coupons', icon: TicketPercent },
+      { label: 'Orders', href: '/admin/orders', icon: ShoppingCart },
+      { label: 'Users', href: '/admin/users', icon: Users },
+    ],
+  },
+  {
+    label: 'Product Masters',
+    items: [
+      { label: 'Categories', href: '/admin/product-masters/categories', icon: Layers3 },
+      { label: 'Attributes', href: '/admin/product-masters/attributes', icon: Tags },
+      { label: 'Category Mappings', href: '/admin/product-masters/category-attributes', icon: LinkIcon },
+      { label: 'Regions', href: '/admin/product-masters/regions', icon: Globe },
+      { label: 'Processing Profiles', href: '/admin/product-masters/processing-profiles', icon: Clock },
+      { label: 'Shipping Profiles', href: '/admin/product-masters/shipping-profiles', icon: Truck },
+      { label: 'Static Dropdowns', href: '/admin/product-masters/product-options', icon: List },
+    ],
+  },
 ];
 
 export function AdminSidebar() {
@@ -69,27 +87,29 @@ export function AdminSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.href)}
-                    tooltip={item.label}
-                  >
-                    <Link href={item.href}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {menuGroups.map((group, index) => (
+          <SidebarGroup key={index}>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.href)}
+                      tooltip={item.label}
+                    >
+                      <Link href={item.href}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter className="p-2">

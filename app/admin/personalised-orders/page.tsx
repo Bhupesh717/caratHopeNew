@@ -98,8 +98,8 @@ export default function AdminBespokeDashboard() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-serif text-foreground">Bespoke Requests</h1>
-          <p className="text-muted-foreground mt-1">Manage all custom jewellery orders and quotations.</p>
+          <h1 className="text-3xl font-serif text-foreground">Personalised Requests</h1>
+          <p className="text-muted-foreground mt-1">Manage all custom and personalised jewellery orders and quotations.</p>
         </div>
       </div>
 
@@ -181,7 +181,7 @@ export default function AdminBespokeDashboard() {
                       <BespokeStatusBadge status={order.status} />
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/admin/bespoke-orders/${order.id}`}>
+                      <Link href={`/admin/personalised-orders/${order.id}`}>
                         <Button variant="ghost" size="sm" className="text-bespoke-gold hover:text-bespoke-gold-dark hover:bg-bespoke-gold/10">
                           <Eye className="w-4 h-4 mr-2" /> View
                         </Button>

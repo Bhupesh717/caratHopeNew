@@ -177,9 +177,9 @@ export default function ProfilePage() {
               <Package className="w-4 h-4" />
               Order History
             </Link>
-            <Link href="/account/bespoke-orders" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors font-medium text-sm">
+            <Link href="/account/personalised-orders" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors font-medium text-sm">
               <Gem className="w-4 h-4" />
-              Bespoke Orders
+              Personalised Orders
             </Link>
 
             <div className="pt-4 mt-4 border-t border-slate-100">

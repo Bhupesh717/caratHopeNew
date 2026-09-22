@@ -8,15 +8,16 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { DataTable, DTColumn } from '../../_components/data-table';
-import { FormModal } from '../../_components/form-modal';
-import { ConfirmDialog } from '../../_components/confirm-dialog';
-import { attributeService } from '../../_services/attribute.service';
-import { AdminAttribute, AdminAttributeValue } from '../../_types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DataTable, DTColumn } from '../../../_components/data-table';
+import { FormModal } from '../../../_components/form-modal';
+import { ConfirmDialog } from '../../../_components/confirm-dialog';
+import { attributeService } from '../../../_services/attribute.service';
+import { AdminAttribute, AdminAttributeValue } from '../../../_types';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 
-const emptyForm = { value: '', price_modifier: 0, sort_order: 0 };
+const emptyForm = { value: '', scale: 'all', price_modifier: 0, sort_order: 0 };
 
 export default function AttributeValuesPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -33,21 +34,28 @@ export default function AttributeValuesPage({ params }: { params: { id: string }
   const [deleteTarget, setDeleteTarget] = useState<AdminAttributeValue | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const [selectedScale, setSelectedScale] = useState<string>('all');
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const attr = await attributeService.getById(attributeId);
-      if (attr) {
-        setAttribute(attr);
-        // Ensure values exist in case the API doesn't return them as an array
-        // @ts-ignore - values comes from backend but might not be in our strict type
-        setData(attr.values || []);
+      let attr = attribute;
+      if (!attr) {
+        const fetchedAttr = await attributeService.getById(attributeId);
+        if (fetchedAttr) {
+          setAttribute(fetchedAttr);
+          attr = fetchedAttr;
+        }
       }
+      
+      const scaleParam = selectedScale !== 'all' ? selectedScale : undefined;
+      const values = await attributeService.getValues(attributeId, { scale: scaleParam, per_page: 0 });
+      setData(values);
     } catch (e) {
       toast.error('Failed to load attribute values');
     }
     setLoading(false);
-  }, [attributeId]);
+  }, [attributeId, selectedScale, attribute]);
 
   useEffect(() => {
     load();
@@ -67,6 +75,7 @@ export default function AttributeValuesPage({ params }: { params: { id: string }
     try {
       await attributeService.createValue(attributeId, { 
         value: form.value,
+        scale: form.scale !== 'all' ? form.scale : undefined,
         price_modifier: Number(form.price_modifier) || 0,
         sort_order: Number(form.sort_order) || 0
       });
@@ -103,6 +112,19 @@ export default function AttributeValuesPage({ params }: { params: { id: string }
       )
     },
     {
+      key: 'scale',
+      header: 'Scale',
+      render: (r) => (
+        r.scale ? (
+          <Badge variant="outline" className="bg-slate-50 text-slate-500 border-slate-200">
+            {r.scale}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground text-sm">All Scales</span>
+        )
+      )
+    },
+    {
       key: 'price_modifier',
       header: 'Price Modifier',
       render: (r) => (
@@ -136,7 +158,7 @@ export default function AttributeValuesPage({ params }: { params: { id: string }
       {/* Premium Header */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-indigo-900 to-indigo-800 p-8 text-white shadow-lg">
         <div className="relative z-10 flex items-center gap-4">
-          <Button variant="ghost" size="icon" className="h-10 w-10 bg-white/10 hover:bg-white/20 text-white rounded-full border border-white/20 transition-all" onClick={() => router.push('/admin/attributes')}>
+          <Button variant="ghost" size="icon" className="h-10 w-10 bg-white/10 hover:bg-white/20 text-white rounded-full border border-white/20 transition-all" onClick={() => router.push('/admin/product-masters/attributes')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 ml-2">
@@ -156,6 +178,23 @@ export default function AttributeValuesPage({ params }: { params: { id: string }
       <Card className="border-slate-200 shadow-sm overflow-hidden">
         <CardContent className="p-0">
           <div className="p-6">
+            {attribute?.allowed_units && attribute.allowed_units.length > 0 && (
+              <div className="mb-6 flex items-center gap-3 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                <Label className="text-slate-600 font-medium">Filter by Scale:</Label>
+                <Select value={selectedScale} onValueChange={setSelectedScale}>
+                  <SelectTrigger className="w-[200px] bg-white">
+                    <SelectValue placeholder="All Scales" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Scales</SelectItem>
+                    {attribute.allowed_units.map((unit) => (
+                      <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
             <DataTable
         columns={columns}
         data={data}
@@ -191,6 +230,22 @@ export default function AttributeValuesPage({ params }: { params: { id: string }
               onChange={(e) => setForm({ ...form, value: e.target.value })}
             />
           </div>
+          {attribute?.allowed_units && attribute.allowed_units.length > 0 && (
+            <div className="space-y-2">
+              <Label>Scale (Optional)</Label>
+              <Select value={form.scale} onValueChange={(v) => setForm({ ...form, scale: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Applies to all scales" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Applies to all scales</SelectItem>
+                  {attribute.allowed_units.map((unit) => (
+                    <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label>Price Modifier (Optional)</Label>
             <Input

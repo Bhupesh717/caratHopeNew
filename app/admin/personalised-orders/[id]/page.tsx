@@ -126,7 +126,7 @@ export default function AdminOrderManagementPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <Link href="/admin/bespoke-orders" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-2">
+          <Link href="/admin/personalised-orders" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-2">
             <ArrowLeft className="w-4 h-4 mr-2" /> Back to Orders
           </Link>
           <div className="flex items-center gap-4 mt-2">

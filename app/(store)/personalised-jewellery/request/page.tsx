@@ -137,7 +137,7 @@ export default function BespokeRequestPage() {
               <p className="text-sm text-muted-foreground uppercase tracking-wider mb-1">Order Reference</p>
               <p className="text-xl font-mono font-medium">{orderId}</p>
             </div>
-            <Link href={`/account/bespoke-orders/${orderId}`} className="w-full">
+            <Link href={`/account/personalised-orders/${orderId}`} className="w-full">
               <Button className="w-full bg-bespoke-gold text-white hover:bg-bespoke-gold-dark h-12">
                 Track My Request
               </Button>

@@ -1,19 +1,23 @@
 import { adminApiClient } from '@/lib/api-client';
-
-export interface Region {
-  id: string;
-  name: string;
-  code?: string;
-  currency_code: string;
-  currency_symbol: string;
-  tax_rate?: number;
-  is_active?: boolean;
-  is_default: boolean;
-}
+import { AdminRegion } from '../_types';
 
 export const regionService = {
-  getAll: async (): Promise<Region[]> => {
+  getAll: async (): Promise<AdminRegion[]> => {
     const response = await adminApiClient.get('/admin/regions');
     return response.data.data || [];
   },
+  
+  create: async (payload: Partial<AdminRegion>): Promise<AdminRegion> => {
+    const response = await adminApiClient.post('/admin/regions', payload);
+    return response.data.data;
+  },
+
+  update: async (id: string, payload: Partial<AdminRegion>): Promise<AdminRegion> => {
+    const response = await adminApiClient.put(`/admin/regions/${id}`, payload);
+    return response.data.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await adminApiClient.delete(`/admin/regions/${id}`);
+  }
 };

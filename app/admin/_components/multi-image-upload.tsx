@@ -1,10 +1,27 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { X, UploadCloud } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface MultiImageUploadProps {
   values: string[];
@@ -13,6 +30,61 @@ interface MultiImageUploadProps {
   maxImages?: number;
   dimensions?: string;
   className?: string;
+}
+
+function SortableImageItem({ id, url, index, onRemove }: { id: string, url: string, index: number, onRemove: () => void }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 1 : 0,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className={cn(
+        "relative group aspect-square rounded-lg border overflow-hidden bg-muted/20",
+        isDragging && "shadow-lg border-primary ring-2 ring-primary ring-offset-1"
+      )}
+    >
+      <img
+        {...attributes} 
+        {...listeners}
+        src={url}
+        alt={`Gallery image ${index + 1}`}
+        className="h-full w-full object-cover shadow-sm transition-transform duration-200 group-hover:scale-[1.03] cursor-grab active:cursor-grabbing"
+      />
+      <button
+        type="button"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+        }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onRemove();
+        }}
+        className="absolute right-1 top-1 rounded-full bg-destructive p-1 text-white shadow-md hover:bg-destructive/90 transition-colors opacity-90 hover:opacity-100 z-10 cursor-pointer"
+        title="Remove Image"
+      >
+        <X className="h-3 w-3" />
+      </button>
+      <div className="absolute left-1 bottom-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-mono pointer-events-none">
+        #{index + 1}
+      </div>
+    </div>
+  );
 }
 
 export function MultiImageUpload({
@@ -25,6 +97,45 @@ export function MultiImageUpload({
 }: MultiImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
+  
+  const itemsRef = useRef<{id: string, url: string}[]>([]);
+
+  const items = useMemo(() => {
+    const currentUrls = itemsRef.current.map(i => i.url);
+    const isExactMatch = values.length === currentUrls.length && values.every((v, i) => v === currentUrls[i]);
+    
+    if (isExactMatch) {
+      return itemsRef.current;
+    }
+    
+    const newItems = values.map((url, index) => {
+      // Preserve ID for exact matches at same index
+      if (itemsRef.current[index]?.url === url) {
+        return itemsRef.current[index];
+      }
+      return { id: `img-${Date.now()}-${Math.random().toString(36).slice(2)}`, url };
+    });
+    
+    itemsRef.current = newItems;
+    return newItems;
+  }, [values]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = items.findIndex((i) => i.id === active.id);
+      const newIndex = items.findIndex((i) => i.id === over.id);
+      
+      const newItems = arrayMove(items, oldIndex, newIndex);
+      itemsRef.current = newItems; 
+      onChange(newItems.map(i => i.url));
+    }
+  };
 
   const handleFiles = (files: FileList) => {
     const currentCount = values.length;
@@ -116,28 +227,28 @@ export function MultiImageUpload({
 
       {/* Grid of uploaded images */}
       {values.length > 0 && (
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-2">
-          {values.map((url, index) => (
-            <div key={index} className="relative group aspect-square rounded-lg border overflow-hidden bg-muted/20">
-              <img
-                src={url}
-                alt={`Gallery image ${index + 1}`}
-                className="h-full w-full object-cover shadow-sm transition-transform duration-200 group-hover:scale-[1.03]"
-              />
-              <button
-                type="button"
-                onClick={() => removeImage(index)}
-                className="absolute right-1 top-1 rounded-full bg-destructive p-1 text-white shadow-md hover:bg-destructive/90 transition-colors cursor-pointer opacity-90 hover:opacity-100"
-                title="Remove Image"
-              >
-                <X className="h-3 w-3" />
-              </button>
-              <div className="absolute left-1 bottom-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">
-                #{index + 1}
-              </div>
-            </div>
-          ))}
-        </div>
+        <DndContext 
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-2">
+            <SortableContext 
+              items={items.map(i => i.id)}
+              strategy={rectSortingStrategy}
+            >
+              {items.map((item, index) => (
+                <SortableImageItem
+                  key={item.id}
+                  id={item.id}
+                  url={item.url}
+                  index={index}
+                  onRemove={() => removeImage(index)}
+                />
+              ))}
+            </SortableContext>
+          </div>
+        </DndContext>
       )}
 
       {/* Upload Drag and Drop box (only visible if below maxImages) */}

@@ -25,6 +25,16 @@ import { Bell, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAdminAuthStore } from '../_store/admin-auth';
 
+const labelMap: Record<string, string> = {
+  'personalised-orders': 'Personalised',
+  'bespoke-orders': 'Personalised',
+  'product-masters': 'Product Masters',
+  'category-attributes': 'Category Mappings',
+  'processing-profiles': 'Processing Profiles',
+  'shipping-profiles': 'Shipping Profiles',
+  'static-dropdowns': 'Static Dropdowns',
+};
+
 /** Convert pathname like /admin/products → ["Dashboard", "Products"] */
 function useBreadcrumbs() {
   const pathname = usePathname();
@@ -33,8 +43,9 @@ function useBreadcrumbs() {
 
   const crumbs = [{ label: 'Dashboard', href: '/admin', isPage: false }];
   const pageName = segments[segments.length - 1];
+  const label = labelMap[pageName] || (pageName.charAt(0).toUpperCase() + pageName.slice(1).replace(/-/g, ' '));
   crumbs.push({
-    label: pageName.charAt(0).toUpperCase() + pageName.slice(1),
+    label,
     href: pathname,
     isPage: true,
   });

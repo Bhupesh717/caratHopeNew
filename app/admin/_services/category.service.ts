@@ -13,8 +13,17 @@ const mapCategory = (c: any): AdminCategory => ({
 });
 
 export const categoryService = {
-  getAll: async (): Promise<AdminCategory[]> => {
-    const response = await adminApiClient.get('/admin/categories');
+  getAll: async (params?: { search?: string; leaf_only?: boolean; status?: string }): Promise<AdminCategory[]> => {
+    let url = '/admin/categories';
+    if (params) {
+      const query = new URLSearchParams();
+      if (params.search) query.append('search', params.search);
+      if (params.leaf_only) query.append('leaf_only', 'true');
+      if (params.status) query.append('status', params.status);
+      const qString = query.toString();
+      if (qString) url += `?${qString}`;
+    }
+    const response = await adminApiClient.get(url);
     return (response.data.data || []).map(mapCategory);
   },
 

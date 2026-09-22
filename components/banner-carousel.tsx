@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -130,13 +131,14 @@ export function BannerCarousel() {
           className="relative w-full h-full overflow-hidden"
         >
           {/* Full-width Background Image */}
-          <motion.img
-            initial={{ scale: 1.05 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 1.2, ease: 'easeOut' }}
+          <Image
             src={slide.image}
             alt={slide.heading || 'Banner'}
-            className="absolute inset-0 h-full w-full object-cover object-center"
+            fill
+            priority={current === 0}
+            sizes="100vw"
+            className="object-cover object-center"
+            quality={80}
           />
 
           {/* Dark gradient overlay at top for navbar readability, and bottom for contrast */}
