@@ -172,6 +172,14 @@ export default function ProductPage({ params }: { params: { id: string } }) {
         return selectedValues.every(val => v.attributes.map(String).includes(val));
       });
       setSelectedVariant(variant || null);
+
+      if (variant && variant.variant_images && variant.variant_images.length > 0) {
+        const img = variant.variant_images[0];
+        const imgPath = typeof img === 'string' ? img : (img.image_path || img.url);
+        if (imgPath) {
+          setActiveImage(imgPath);
+        }
+      }
     }
   }, [selectedOptions, product]);
 
@@ -394,6 +402,53 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                   </div>
                 ))}
               </div>
+            )}
+
+            {/* View all variants */}
+            {product.has_variants && product.variants && product.variants.length > 0 && (
+               <div className="space-y-4 pt-4 pb-6 border-b border-neutral-200">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-neutral-900 block mb-3">Available Variants</span>
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                     {product.variants.map((v: any) => {
+                        const vImg = v.variant_images?.[0] || v.image;
+                        const vImgPath = typeof vImg === 'string' ? vImg : (vImg?.image_path || vImg?.url);
+                        const isSelected = selectedVariant?.id === v.id;
+                        
+                        return (
+                           <button
+                             key={v.id}
+                             onClick={() => {
+                                if (v.attributes && product.variation_axes) {
+                                   const newOpts: any = { ...selectedOptions };
+                                   product.variation_axes.forEach((axis: any) => {
+                                      const matchedVal = axis.values?.find((val: any) => v.attributes.map(String).includes(String(val.id)));
+                                      if (matchedVal) newOpts[axis.id] = String(matchedVal.id);
+                                   });
+                                   setSelectedOptions(newOpts);
+                                }
+                             }}
+                             className={`relative rounded-md overflow-hidden border-2 transition-all p-1 flex flex-col items-center gap-1.5 ${
+                               isSelected ? 'border-emerald-dark shadow-sm bg-emerald-50' : 'border-transparent hover:border-neutral-300'
+                             }`}
+                             title={v.sku || 'Variant'}
+                           >
+                              {vImgPath ? (
+                                <div className="relative w-full aspect-square rounded overflow-hidden bg-neutral-100">
+                                   <Image src={vImgPath} alt={v.sku || 'Variant'} fill className="object-cover" sizes="4rem" />
+                                </div>
+                              ) : (
+                                <div className="relative w-full aspect-square rounded bg-neutral-100 flex items-center justify-center text-[10px] text-neutral-400">
+                                   No Img
+                                </div>
+                              )}
+                              <span className="text-[10px] text-neutral-600 truncate w-full text-center font-medium px-1">
+                                {v.sku ? v.sku.split('-').pop() : 'Var'}
+                              </span>
+                           </button>
+                        )
+                     })}
+                  </div>
+               </div>
             )}
 
             {/* Quantity and Store Availability */}

@@ -38,6 +38,7 @@ export function ProductWizard({ mode = 'create', initialProduct = null }: { mode
   const [activeSection, setActiveSection] = useState('item-details');
   const [loading, setLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Centralized Massive Payload State
   const [form, setForm] = useState<ProductFormState>({
@@ -194,8 +195,115 @@ export function ProductWizard({ mode = 'create', initialProduct = null }: { mode
     }
   };
 
+  const validateForm = () => {
+    if (!form.name || form.name.trim() === '') {
+      toast.error('Product name is required.');
+      scrollToSection('item-details');
+      return false;
+    }
+    if (form.name.length > 255) {
+      toast.error('Product name must not exceed 255 characters.');
+      scrollToSection('item-details');
+      return false;
+    }
+
+    if (!form.category_id) {
+      toast.error('Category is required.');
+      scrollToSection('item-details');
+      return false;
+    }
+
+    const images = form.images || [];
+    if (images.length === 0) {
+      toast.error('At least one product image is required.');
+      scrollToSection('media');
+      return false;
+    }
+    if (images.length > 20) {
+      toast.error('You can upload up to 20 photos maximum.');
+      scrollToSection('media');
+      return false;
+    }
+
+    if (!form.has_variants) {
+      if (form.stock_qty === undefined || form.stock_qty === null) {
+        toast.error('Stock quantity is required for simple products.');
+        scrollToSection('delivery');
+        return false;
+      }
+      const qty = Number(form.stock_qty);
+      if (qty < 1 || qty > 999) {
+        toast.error('Enter a quantity between 1 and 999.');
+        scrollToSection('delivery');
+        return false;
+      }
+    }
+
+    if (form.tags && form.tags.length > 13) {
+      toast.error('You can add up to 13 tags.');
+      scrollToSection('attributes');
+      return false;
+    }
+
+    const validatePriceGroup = (prices: any[], prefix: string, section: string) => {
+      if (!prices || prices.length === 0) return false;
+      for (const p of prices) {
+        if (!p.price || Number(p.price) < 0) {
+          toast.error(`${prefix} price must be 0 or greater.`);
+          scrollToSection(section);
+          return false;
+        }
+        if (p.compare_at_price && Number(p.compare_at_price) < Number(p.price)) {
+          toast.error(`${prefix} compare-at price must be greater than or equal to the price.`);
+          scrollToSection(section);
+          return false;
+        }
+      }
+      return true;
+    };
+
+    if (!form.has_variants || !form.prices_vary) {
+      if (!form.prices || form.prices.length === 0) {
+        toast.error('At least one regional price is required.');
+        scrollToSection('delivery');
+        return false;
+      }
+      if (!validatePriceGroup(form.prices, 'Base', 'delivery')) return false;
+    }
+
+    if (form.has_variants && form.variants) {
+      if (form.prices_vary) {
+        for (let i = 0; i < form.variants.length; i++) {
+          const v = form.variants[i];
+          if (!v.prices || v.prices.length === 0) {
+            toast.error(`Each variant requires at least one regional price (Variant ${i + 1}).`);
+            scrollToSection('delivery');
+            return false;
+          }
+          if (!validatePriceGroup(v.prices, `Variant ${i + 1}`, 'delivery')) return false;
+        }
+      }
+      if (form.quantities_vary) {
+        for (let i = 0; i < form.variants.length; i++) {
+          const v = form.variants[i];
+          const qty = Number(v.stock_quantity);
+          if (qty < 0 || qty > 999) {
+            toast.error(`Variant ${i + 1} stock must be between 0 and 999.`);
+            scrollToSection('delivery');
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
+  };
+
   const handleSave = async () => {
+    if (!validateForm()) return;
+    
     setLoading(true);
+    setSubmitError(null);
     try {
       if (mode === 'create') {
         await productService.create(form);
@@ -206,7 +314,9 @@ export function ProductWizard({ mode = 'create', initialProduct = null }: { mode
       }
       router.push('/admin/products');
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to save product');
+      const errMsg = error?.response?.data?.message || error?.message || 'Failed to save product';
+      toast.error(errMsg);
+      setSubmitError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -379,9 +489,16 @@ export function ProductWizard({ mode = 'create', initialProduct = null }: { mode
 
       {/* Fixed Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200 z-50 flex justify-between items-center px-6 sm:px-10 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] md:pl-72">
-        <Button variant="outline" onClick={() => router.push('/admin/products')} className="gap-2">
-          <ArrowLeft className="h-4 w-4" /> Back to Products
-        </Button>
+        <div className="flex flex-col md:flex-row md:items-center gap-3">
+          <Button variant="outline" onClick={() => router.push('/admin/products')} className="gap-2">
+            <ArrowLeft className="h-4 w-4" /> Back to Products
+          </Button>
+          {submitError && (
+            <div className="text-sm text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 flex-1 max-w-sm overflow-hidden text-ellipsis whitespace-nowrap" title={submitError}>
+              {submitError}
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           {/* Preview Product */}
           <Button

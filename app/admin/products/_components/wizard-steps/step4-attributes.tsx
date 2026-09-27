@@ -179,7 +179,7 @@ export function Step4Attributes({ form, setForm }: { form: ProductFormState, set
   const getSelectedArray = (slug: string): string[] => {
     const isStandard = ['materials', 'gold_solidity', 'gold_purity'].includes(slug);
     let raw: any = isStandard ? (form[slug as keyof ProductFormState] as any) : form.listing_attributes?.[slug];
-    
+
     // If raw is an object like { attribute_id: 12, attribute_value_ids: [63] }
     if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
       if (Array.isArray(raw.attribute_value_ids)) {
@@ -207,7 +207,7 @@ export function Step4Attributes({ form, setForm }: { form: ProductFormState, set
   const setSelectedArray = (slug: string, next: string[], fullAttr?: AdminAttribute) => {
     const isStandard = ['materials', 'gold_solidity', 'gold_purity'].includes(slug);
     const numericIds = next.map(Number).filter((n) => !isNaN(n));
-    
+
     if (isStandard) {
       setForm({ ...form, [slug]: numericIds });
     } else {
@@ -291,7 +291,7 @@ export function Step4Attributes({ form, setForm }: { form: ProductFormState, set
         />
         <div className="flex flex-wrap gap-1.5">
           {(form.tags || []).map(tag => (
-            <Badge key={tag} variant="secondary" className="cursor-pointer gap-1 pr-1.5 py-0.5 text-xs bg-white border border-slate-200 shadow-2xs font-normal" onClick={() => removeTag(tag)}>
+            <Badge key={tag} variant="secondary" className="cursor-pointer gap-1 pr-1.5 py-0.5 text-xs bg-white text-black border border-slate-200 shadow-2xs font-normal" onClick={() => removeTag(tag)}>
               #{tag}
               <X className="h-2.5 w-2.5 text-slate-400 hover:text-slate-700" />
             </Badge>
