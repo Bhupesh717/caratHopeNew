@@ -434,16 +434,16 @@ export default function BookAppointmentPage() {
               <li className="flex items-start gap-3">
                 <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-gold-primary" />
                 <a
-                  href="https://www.google.com/maps/search/10%2F523+Malviya+Nagar+Road+Jaipur+302017"
+                  href="https://www.google.com/maps/place/Carathope%E2%84%A2/@26.9252353,75.8104058,17z/data=!4m6!3m5!1s0x396db18d65788ea5:0x221b7b89c9aec953!8m2!3d26.9252353!4d75.8104058!16s%2Fg%2F11njwzzr0f?hl=en-IN&entry=ttu&g_ep=EgoyMDI2MTAwNy4wIKXMDSoASAFQAw%3D%3D"
                   target="_blank" rel="noopener noreferrer"
                   className="text-slate-300 hover:text-white transition-colors leading-relaxed"
                 >
-                  10/523 Malviya Nagar Road<br />Jaipur 302017, Rajasthan
+                  THAKUR IMPEX,<br />4252, Nindar Rav Ji Ka Rasta,<br />Chanpole Bazar, Jaipur, 302001
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-4 h-4 shrink-0 text-gold-primary" />
-                <a href="tel:+918824700161" className="text-slate-300 hover:text-white transition-colors">+91 (882) 470-0161</a>
+                <a href="tel:+917821081808" className="text-slate-300 hover:text-white transition-colors">+91 7821081808</a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-4 h-4 shrink-0 text-gold-primary" />
@@ -451,7 +451,7 @@ export default function BookAppointmentPage() {
               </li>
               <li className="flex items-center gap-3">
                 <MessageCircle className="w-4 h-4 shrink-0 text-gold-primary" />
-                <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer"
+                <a href="https://wa.me/917821081808" target="_blank" rel="noopener noreferrer"
                   className="text-slate-300 hover:text-white transition-colors">WhatsApp Us</a>
               </li>
             </ul>
@@ -471,11 +471,11 @@ export default function BookAppointmentPage() {
             <p className="text-sm text-slate-500 leading-relaxed mb-5">
               Call or message us directly and we'll schedule your visit in minutes.
             </p>
-            <a href="tel:+918824700161"
+            <a href="tel:+917821081808"
               className="flex items-center justify-center gap-2 w-full border border-emerald-dark text-emerald-dark hover:bg-emerald-dark hover:text-white py-3 text-xs tracking-[0.18em] uppercase font-semibold transition-colors duration-300 mb-3">
               <Phone className="w-3.5 h-3.5" /> Call Now
             </a>
-            <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer"
+            <a href="https://wa.me/917821081808" target="_blank" rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full border border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white py-3 text-xs tracking-[0.18em] uppercase font-semibold transition-colors duration-300">
               <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
             </a>

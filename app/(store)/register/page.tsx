@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/auth';
 import { GoogleLogin } from '@react-oauth/google';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Phone, MapPin } from 'lucide-react';
+import { Mail, User, ArrowRight, Phone, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo';
 import { toast } from 'sonner';
@@ -20,8 +20,7 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -31,14 +30,13 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      if (!name || !phone || !password || !email) {
+      if (!name || !phone || !email) {
         throw new Error('Please fill in all required fields');
       }
 
       await register({
         name,
         phone,
-        password,
         email: email.trim(),
       });
 
@@ -136,30 +134,7 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* Password */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Password *</label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-4 w-4 text-slate-400" />
-                  </div>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full pl-10 pr-10 py-3 border border-slate-200 rounded-xl focus:ring-[var(--primary)] focus:border-primary bg-slate-50/50 text-sm transition-colors"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
+
 
             </div>
 

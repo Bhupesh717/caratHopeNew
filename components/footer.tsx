@@ -90,7 +90,7 @@ export function Footer() {
                     className="flex items-start gap-2.5 text-slate-400 hover:text-white transition-colors group"
                   >
                     <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#c9a96e] group-hover:text-white transition-colors" />
-                    <span className="text-xs leading-relaxed">4252, Nindar, Rav Ji, Godika Ka Rasta, Chandpole Bazar, Chandpole, Chandpol, Jaipur, Rajasthan 302001, India</span>
+                    <span className="text-xs leading-relaxed">THAKUR IMPEX,<br />4252, Nindar Rav Ji Ka Rasta, Chanpole Bazar, Jaipur, 302001</span>
                   </a>
                 </li>
                 <li>

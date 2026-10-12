@@ -62,9 +62,9 @@ export default function ContactPage() {
                                     <div>
                                         <h3 className="font-medium text-slate-900 mb-1">Address</h3>
                                         <p className="text-slate-500 font-light leading-relaxed">
-                                            4252, Nindar, Rav Ji, Godika Ka Rasta<br />
-                                            Chandpole Bazar, Chandpole, Chandpol<br />
-                                            Jaipur, Rajasthan 302001, India
+                                            THAKUR IMPEX,<br />
+                                            4252, Nindar Rav Ji Ka Rasta,<br />
+                                            Chanpole Bazar, Jaipur, 302001
                                         </p>
                                     </div>
                                 </motion.div>

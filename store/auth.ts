@@ -23,7 +23,6 @@ interface AuthState {
   register: (data: {
     name: string;
     phone: string;
-    password: string;
     email?: string;
     shipping_address?: string;
     permanent_address?: string;
