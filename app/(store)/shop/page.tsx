@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ProductCard } from '@/components/product-card';
 import { mockProducts } from '@/lib/mock-data';
 import { apiClient } from '@/lib/api-client';
@@ -19,6 +20,19 @@ import { PageHeader } from '@/components/page-header';
 import { Sparkles } from 'lucide-react';
 
 export default function ShopPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center py-24 min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    }>
+      <ShopContent />
+    </Suspense>
+  );
+}
+
+function ShopContent() {
+  const searchParams = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('featured');
@@ -34,21 +48,14 @@ export default function ShopPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalProducts, setTotalProducts] = useState(0);
 
-  // Read URL params on mount
+  // React to URL param changes (works with client-side navigation)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const catParam = params.get('category');
-      if (catParam) {
-        setSelectedCategory(catParam);
-      }
-      const searchParam = params.get('search');
-      if (searchParam) {
-        setSearchQuery(searchParam);
-      }
-      setIsReady(true);
-    }
-  }, []);
+    const catParam = searchParams.get('category');
+    const searchParam = searchParams.get('search');
+    setSelectedCategory(catParam || 'all');
+    setSearchQuery(searchParam || '');
+    setIsReady(true);
+  }, [searchParams]);
 
   // Fetch categories once on mount
   useEffect(() => {

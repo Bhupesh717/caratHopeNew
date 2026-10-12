@@ -62,9 +62,9 @@ export default function ContactPage() {
                                     <div>
                                         <h3 className="font-medium text-slate-900 mb-1">Address</h3>
                                         <p className="text-slate-500 font-light leading-relaxed">
-                                            10/523 Malviya Nagar Road<br />
-                                            Jaipur, Rajasthan 302017<br />
-                                            India
+                                            4252, Nindar, Rav Ji, Godika Ka Rasta<br />
+                                            Chandpole Bazar, Chandpole, Chandpol<br />
+                                            Jaipur, Rajasthan 302001, India
                                         </p>
                                     </div>
                                 </motion.div>
@@ -76,7 +76,7 @@ export default function ContactPage() {
                                     <div>
                                         <h3 className="font-medium text-slate-900 mb-1">Phone</h3>
                                         <p className="text-slate-500 font-light">
-                                            +91 (882) 470-0161
+                                            +91 (782) 108-1808
                                         </p>
                                     </div>
                                 </motion.div>
@@ -106,6 +106,20 @@ export default function ContactPage() {
                                     </div>
                                 </motion.div>
                             </div>
+
+                            {/* Google Maps Embed */}
+                            <motion.div variants={fadeUp} className="rounded-xl overflow-hidden shadow-sm border border-slate-100">
+                                <iframe
+                                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3557.3147257757264!2d75.8104058!3d26.925235299999997!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396db18d65788ea5%3A0x221b7b89c9aec953!2zQ2FyYXRob3Bl4oSi!5e0!3m2!1sen!2sus!4v1791814571744!5m2!1sen!2sus"
+                                    width="100%"
+                                    height="250"
+                                    style={{ border: 0 }}
+                                    allowFullScreen
+                                    loading="lazy"
+                                    referrerPolicy="strict-origin-when-cross-origin"
+                                    title="CaratHope Location"
+                                />
+                            </motion.div>
                         </motion.div>
 
                         {/* Contact Form */}

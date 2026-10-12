@@ -16,7 +16,7 @@ export default function StoreLayout({
       <MainLayoutWrapper>
         {children}
       </MainLayoutWrapper>
-      <FloatingWhatsAppButton phoneNumber="919876543210" />
+      <FloatingWhatsAppButton phoneNumber="917821081808" />
       <Footer />
     </>
   )
