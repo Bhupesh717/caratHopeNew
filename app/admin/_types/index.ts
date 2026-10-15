@@ -115,6 +115,9 @@ export interface ProductFormState {
   
   processing_profile_id?: string | number;
   shipping_profile_id?: string | number;
+  
+  // GST / Tax rates per region
+  gst_rates?: { region_id: number | string; gst_percentage: number }[];
 }
 
 export interface ProductVariantFormState {
@@ -262,6 +265,8 @@ export interface AdminRegion {
   currency_code: string;
   currency_symbol: string;
   tax_rate?: number;
+  tax_rules?: { id?: number | string; region_id?: number | string; tax_name: string; tax_percentage: number | string; inclusive?: boolean }[];
+  taxRules?: { id?: number | string; region_id?: number | string; tax_name: string; tax_percentage: number | string; inclusive?: boolean }[];
   is_active?: boolean;
   is_default: boolean;
   createdAt: string;

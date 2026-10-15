@@ -142,6 +142,15 @@ export const formatProductPayload = (data: ProductFormState): any => {
     }
   }
 
+  if (data.gst_rates && Array.isArray(data.gst_rates)) {
+    payload.gst_rates = data.gst_rates
+      .filter((g: any) => g.region_id && g.gst_percentage !== undefined && g.gst_percentage !== null && g.gst_percentage !== '')
+      .map((g: any) => ({
+        region_id: Number(g.region_id),
+        gst_percentage: Number(g.gst_percentage),
+      }));
+  }
+
   return payload;
 };
 

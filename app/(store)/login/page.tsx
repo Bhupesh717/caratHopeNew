@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/auth';
 import { GoogleLogin } from '@react-oauth/google';
-import { User, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import Image from 'next/image';
@@ -17,7 +17,7 @@ export default function LoginPage() {
   const loginVerifyOtp = useAuthStore((state) => state.loginVerifyOtp);
   const googleLogin = useAuthStore((state) => state.googleLogin);
 
-  const [identifier, setIdentifier] = useState('');
+  const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [hasSentOtp, setHasSentOtp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,18 +35,21 @@ export default function LoginPage() {
     return () => clearInterval(timerId);
   }, [timeLeft]);
 
-  const getInputType = (val: string) => val.includes('@') ? 'email' : 'phone';
-
   const handleSendOtp = async () => {
-    if (!identifier) {
-      toast.error('Please enter your email or phone number');
+    if (!email) {
+      toast.error('Please enter your email address');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
     setIsResending(true);
     setError('');
     try {
-      const type = getInputType(identifier);
-      await loginSendOtp(identifier.trim(), type);
+      await loginSendOtp(email.trim(), 'email');
       setHasSentOtp(true);
       setTimeLeft(60);
     } catch (err: any) {
@@ -62,17 +65,16 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      if (!identifier) throw new Error('Please enter your email or phone number');
+      if (!email) throw new Error('Please enter your email address');
       if (!otp) throw new Error('Please enter the OTP');
 
-      const type = getInputType(identifier);
-      await loginVerifyOtp(identifier.trim(), type, otp);
+      await loginVerifyOtp(email.trim(), 'email', otp);
 
       router.push('/');
     } catch (err: any) {
       const errMsg = err.message || 'Verification failed. Please check the OTP.';
       setError(errMsg);
-      if (err.message === 'Please enter the OTP' || err.message === 'Please enter your email or phone number') {
+      if (err.message === 'Please enter the OTP' || err.message === 'Please enter your email address') {
         toast.error(errMsg);
       }
     } finally {
@@ -114,19 +116,19 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-slate-700">Email or Phone Number *</label>
+              <label className="block text-sm font-medium text-slate-700">Email Address *</label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-4 w-4 text-slate-400" />
+                  <Mail className="h-4 w-4 text-slate-400" />
                 </div>
                 <input
-                  type="text"
+                  type="email"
                   required
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   disabled={hasSentOtp}
                   className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl focus:ring-[var(--primary)] focus:border-primary bg-slate-50/50 text-sm transition-colors disabled:opacity-60"
-                  placeholder="e.g. rahul@example.com or +919876543210"
+                  placeholder="e.g. rahul@example.com"
                 />
               </div>
             </div>
@@ -136,7 +138,7 @@ export default function LoginPage() {
                 <Button
                   type="button"
                   onClick={handleSendOtp}
-                  disabled={isResending || !identifier}
+                  disabled={isResending || !email}
                   className="w-full flex justify-center py-6 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none transition-all duration-300"
                 >
                   {isResending ? (
@@ -180,7 +182,7 @@ export default function LoginPage() {
                       }}
                       className="text-slate-500 hover:text-primary transition-colors"
                     >
-                      Change Email/Phone
+                      Change Email
                     </button>
 
                     {timeLeft > 0 ? (

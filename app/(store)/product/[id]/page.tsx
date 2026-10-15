@@ -77,6 +77,30 @@ export default function ProductPage({ params }: { params: { id: string } }) {
           let originalPrice = p.discount_price ? Number(p.price) : undefined;
           let currency = p.display_currency || 'INR';
 
+          // Find applicable GST rate: backend returns region-specific price via IP detection.
+          // Match gst_rates by display_region_id (if provided) or pick first rate for matching currency.
+          let gst_percentage = 0;
+          if (Array.isArray(p.gst_rates) && p.gst_rates.length > 0) {
+            // Prefer region_id match if backend provides display_region_id
+            if (p.display_region_id) {
+              const match = p.gst_rates.find((g: any) => String(g.region_id) === String(p.display_region_id));
+              if (match) gst_percentage = Number(match.gst_percentage);
+            } else {
+              // Fallback: use currency_code to find matching price entry, then match region_id
+              const matchingPrice = Array.isArray(p.prices)
+                ? p.prices.find((pr: any) => pr.currency_code === currency)
+                : null;
+              if (matchingPrice) {
+                const gstMatch = p.gst_rates.find((g: any) => String(g.region_id) === String(matchingPrice.region_id));
+                if (gstMatch) gst_percentage = Number(gstMatch.gst_percentage);
+              }
+              // Last fallback: just use first available rate
+              if (!gst_percentage && p.gst_rates[0]) {
+                gst_percentage = Number(p.gst_rates[0].gst_percentage);
+              }
+            }
+          }
+
           const mappedProd: Product = {
             id: String(p.id),
             name: p.name,
@@ -92,6 +116,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             has_variants: Boolean(p.has_variants),
             variants: p.variants || [],
             variation_axes: p.variation_axes || [],
+            gst_percentage,
           };
           setProduct(mappedProd);
           setActiveImage(allImages[0]);

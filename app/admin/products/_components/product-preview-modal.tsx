@@ -53,8 +53,13 @@ export function ProductPreviewModal({ open, onClose, form }: ProductPreviewModal
 
   // Build unified media list: images first, then video
   const media: MediaItem[] = [
-    ...(form.images || []).map((src): MediaItem => ({ type: 'image', src })),
-    ...(form.video ? [{ type: 'video' as const, src: form.video }] : []),
+    ...(form.images || []).map((src): MediaItem => ({
+      type: 'image',
+      src: src instanceof File ? URL.createObjectURL(src) : String(src)
+    })),
+    ...(form.video
+      ? [{ type: 'video' as const, src: form.video instanceof File ? URL.createObjectURL(form.video) : String(form.video) }]
+      : []),
   ];
 
   const current = media[activeIdx] ?? null;

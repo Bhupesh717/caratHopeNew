@@ -28,5 +28,5 @@ export default function ProductEditPage() {
     return <div className="flex justify-center items-center h-64 text-red-500">Product not found.</div>;
   }
 
-  return <ProductWizard mode="edit" initialProduct={product} />;
+  return <ProductWizard key={product.id} mode="edit" initialProduct={product} />;
 }

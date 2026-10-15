@@ -43,7 +43,20 @@ export default function CartPage() {
     }
   }
   const taxableAmount = Math.max(0, subtotal - discountAmount);
-  const tax = taxableAmount * 0.08;
+
+  // Tax: sum of per-item GST based on each product's gst_percentage from admin settings
+  const tax = items
+    .filter(item => item.selected !== false)
+    .reduce((sum, item) => {
+      const rate = (item.gst_percentage || 0) / 100;
+      return sum + item.price * item.quantity * rate;
+    }, 0);
+
+  // Average tax rate for display (weighted by price)
+  const effectiveTaxRate = subtotal > 0
+    ? Math.round((tax / subtotal) * 100 * 100) / 100
+    : 0;
+
   const total = taxableAmount + tax;
 
   const handleApplyCoupon = async () => {
@@ -252,8 +265,8 @@ export default function CartPage() {
                 <span>Free</span>
               </div>
               <div className="flex justify-between text-neutral-600 text-sm">
-                <span>Tax (8%)</span>
-                <span>{currSymbol}{tax.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                <span>Tax {effectiveTaxRate > 0 ? `(${effectiveTaxRate}%)` : '& Charges'}</span>
+                <span>{tax > 0 ? `${currSymbol}${tax.toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : `${currSymbol}0`}</span>
               </div>
               <div className="border-t border-neutral-200 pt-3 flex justify-between font-semibold text-lg text-neutral-900">
                 <span>Total</span>

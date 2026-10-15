@@ -34,18 +34,41 @@ export default function Page() {
         setLoading(true);
         const response = await apiClient.get('/public/products?featured=true&per_page=12');
         if (response.data && response.data.success && Array.isArray(response.data.data) && response.data.data.length > 0) {
-          const mapped: Product[] = response.data.data.map((p: any) => ({
-            id: String(p.id),
-            name: p.name,
-            price: p.discount_price ? Number(p.discount_price) : Number(p.price),
-            originalPrice: p.discount_price ? Number(p.price) : undefined,
-            currency: p.display_currency || 'INR', // Usually INR for Indian sites, but defaulting to IN might be fine, changed to INR just in case
-            category: p.category?.name || 'Jewelry',
-            image: p.images || p.product_images?.[0]?.image_path || 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&h=800&fit=crop',
-            description: p.description || '',
-            rating: p.avg_rating ? Number(Number(p.avg_rating).toFixed(1)) : 5, // Defaulting to 5 if no rating
-            reviews: p.reviews_count || 0,
-          }));
+          const mapped: Product[] = response.data.data.map((p: any) => {
+            const currency = p.display_currency || 'INR';
+            // Extract GST rate matching current region (by currency or display_region_id)
+            let gst_percentage = 0;
+            if (Array.isArray(p.gst_rates) && p.gst_rates.length > 0) {
+              if (p.display_region_id) {
+                const match = p.gst_rates.find((g: any) => String(g.region_id) === String(p.display_region_id));
+                if (match) gst_percentage = Number(match.gst_percentage);
+              } else {
+                const matchingPrice = Array.isArray(p.prices)
+                  ? p.prices.find((pr: any) => pr.currency_code === currency)
+                  : null;
+                if (matchingPrice) {
+                  const gstMatch = p.gst_rates.find((g: any) => String(g.region_id) === String(matchingPrice.region_id));
+                  if (gstMatch) gst_percentage = Number(gstMatch.gst_percentage);
+                }
+                if (!gst_percentage && p.gst_rates[0]) {
+                  gst_percentage = Number(p.gst_rates[0].gst_percentage);
+                }
+              }
+            }
+            return {
+              id: String(p.id),
+              name: p.name,
+              price: p.discount_price ? Number(p.discount_price) : Number(p.price),
+              originalPrice: p.discount_price ? Number(p.price) : undefined,
+              currency,
+              category: p.category?.name || 'Jewelry',
+              image: p.images || p.product_images?.[0]?.image_path || 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&h=800&fit=crop',
+              description: p.description || '',
+              rating: p.avg_rating ? Number(Number(p.avg_rating).toFixed(1)) : 5,
+              reviews: p.reviews_count || 0,
+              gst_percentage,
+            };
+          });
           setFeaturedProducts(mapped);
         } else {
           setFeaturedProducts(mockProducts);

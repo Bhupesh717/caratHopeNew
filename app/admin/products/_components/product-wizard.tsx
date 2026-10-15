@@ -154,6 +154,11 @@ export function ProductWizard({ mode = 'create', initialProduct = null }: { mode
 
         processing_profile_id: p.processing_profile_id ?? (p.processing_profile ? p.processing_profile.id : undefined),
         shipping_profile_id: p.shipping_profile_id ?? (p.shipping_profile ? p.shipping_profile.id : undefined),
+
+        gst_rates: (p.gst_rates || p.gstRates || []).map((g: any) => ({
+          region_id: g.region_id,
+          gst_percentage: Number(g.gst_percentage),
+        })),
       });
     }
   }, [mode, initialProduct]);

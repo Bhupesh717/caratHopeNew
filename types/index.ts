@@ -13,6 +13,7 @@ export interface Product {
   has_variants?: boolean;
   variants?: any[];
   variation_axes?: any[];
+  gst_percentage?: number; // GST/Tax rate from product admin settings (region-specific)
 }
 
 export interface CartItem extends Product {
