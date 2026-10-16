@@ -264,17 +264,17 @@ export default function CartPage() {
                 <span>Shipping</span>
                 <span>Free</span>
               </div>
-              <div className="flex justify-between text-neutral-600 text-sm">
+              {/* <div className="flex justify-between text-neutral-600 text-sm">
                 <span>Tax {effectiveTaxRate > 0 ? `(${effectiveTaxRate}%)` : '& Charges'}</span>
                 <span>{tax > 0 ? `${currSymbol}${tax.toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : `${currSymbol}0`}</span>
-              </div>
+              </div> */}
               <div className="border-t border-neutral-200 pt-3 flex justify-between font-semibold text-lg text-neutral-900">
                 <span>Total</span>
                 <span>{currSymbol}{total.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
               </div>
             </div>
-            <Button 
-              asChild 
+            <Button
+              asChild
               disabled={items.filter(i => i.selected !== false).length === 0}
               className={`mt-6 w-full py-6 ${items.filter(i => i.selected !== false).length === 0 ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed pointer-events-none' : 'bg-neutral-900 text-white hover:bg-neutral-800'}`}
             >

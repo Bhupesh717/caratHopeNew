@@ -29,14 +29,15 @@ export default function AdminDashboard() {
     async function loadData() {
       try {
         setLoading(true);
-        const [dashboardStats, allOrders] = await Promise.all([
+        const [dashboardStats, allOrdersRes] = await Promise.all([
           dashboardService.getStats(),
-          orderService.getAll(),
+          orderService.getAll({ per_page: 10 }),
         ]);
         setStats(dashboardStats);
         
         // Sort and get top 5 recent orders
-        const sorted = [...allOrders]
+        const orderList = Array.isArray(allOrdersRes) ? allOrdersRes : (allOrdersRes.data || []);
+        const sorted = [...orderList]
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
           .slice(0, 5);
         setRecentOrders(sorted);

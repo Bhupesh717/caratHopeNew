@@ -165,6 +165,17 @@ export interface OrderItem {
   price: number;
 }
 
+export interface OrderAddress {
+  line1?: string;
+  address?: string;
+  apartment?: string | null;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  zip?: string;
+  country?: string;
+}
+
 /** Order */
 export interface Order {
   id: string;
@@ -173,10 +184,24 @@ export interface Order {
   customerEmail: string;
   customerPhone: string;
   items: OrderItem[];
+  itemsCount?: number;
+  itemsQuantity?: number;
+  subtotalAmount?: number;
+  discountAmount?: number;
+  gstAmount?: number;
   totalAmount: number;
+  currency?: string;
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
+  paymentMethod?: string | null;
+  razorpayOrderId?: string | null;
+  razorpayPaymentId?: string | null;
+  paidAt?: string | null;
+  billingAddress?: OrderAddress | null;
+  shippingAddress?: OrderAddress | null;
+  notes?: string | null;
   createdAt: string;
+  updatedAt?: string;
 }
 
 /** App user (customer) */
